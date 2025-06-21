@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Filter, Grid, List, Calendar, Star, SlidersHorizontal, ChevronDown, X, TrendingUp, Clock, Check } from "lucide-react";
@@ -23,6 +23,25 @@ interface FilterState {
 }
 
 const BrowsePage: React.FC = () => {
+  return (
+    <Suspense fallback={<BrowsePageFallback />}>
+      <BrowsePageContent />
+    </Suspense>
+  );
+};
+
+const BrowsePageFallback: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+      <div className="relative">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-neutral-700 border-t-blue-500 shadow-lg"></div>
+        <div className="absolute inset-0 animate-pulse rounded-full h-16 w-16 border-4 border-transparent border-t-purple-500 opacity-30"></div>
+      </div>
+    </div>
+  );
+};
+
+const BrowsePageContent: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { t, getDirection } = useLanguage();
@@ -677,8 +696,7 @@ const BrowsePage: React.FC = () => {
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: linear-gradient(to bottom, #2563eb, #7c3aed);
-        }
-      `}</style>
+        }      `}</style>
     </div>
   );
 };
