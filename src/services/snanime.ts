@@ -1,6 +1,6 @@
 class SnAnimeService {
   private static instance: SnAnimeService;
-  url = "http://localhost:5000";
+  url = "http://snanime-api.snowydev.xyz";
 
   public static getInstance(): SnAnimeService {
     if (!SnAnimeService.instance) {
