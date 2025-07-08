@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -36,7 +36,7 @@ interface FilterState {
   sortOrder: "asc" | "desc";
 }
 
-const BrowsePage: React.FC = () => {
+const BrowsePageClient: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { t, getDirection } = useLanguage();
@@ -813,6 +813,14 @@ const BrowsePage: React.FC = () => {
         }
       `}</style>
     </div>
+  );
+};
+
+const BrowsePage = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BrowsePageClient />
+    </Suspense>
   );
 };
 
