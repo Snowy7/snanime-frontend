@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "SnAnime",
     description: "Watch your favorite anime in high quality with SnAnime. Stream the latest episodes, discover new series, and enjoy a seamless viewing experience.",
-    url: "https://snanime.com",
+    url: "https://snanime.snowydev.xyz",
     siteName: "SnAnime",
     images: [
       {

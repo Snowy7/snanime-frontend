@@ -1,14 +1,16 @@
 import { Metadata } from "next";
 import { SnAnimeService } from "@/services/snanime";
 import AnimePageClient from "../../../components/pages/AnimePageClient";
+import { use } from "react";
 
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
+  const resolvedParams = use(params);
   const snanime = SnAnimeService.getInstance();
-  const anime = await snanime.getAnimeInfo(params.slug);
+  const anime = await snanime.getAnimeInfo(resolvedParams.slug);
 
   if (!anime) {
     return {
@@ -43,6 +45,12 @@ export async function generateMetadata({
   };
 }
 
-export default function AnimePage({ params }: { params: { slug: string } }) {
-  return <AnimePageClient params={params} />;
+interface AnimePageProps {
+  params: Promise<{
+    slug: string;
+  }>;
+}
+
+export default function AnimePage({ params }: AnimePageProps) {
+  return <AnimePageClient unresolvedParams={params} />;
 }

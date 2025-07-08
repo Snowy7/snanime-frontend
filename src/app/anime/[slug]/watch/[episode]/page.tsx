@@ -1,15 +1,17 @@
 import { Metadata } from "next";
 import { SnAnimeService } from "@/services/snanime";
 import WatchPageClient from "../../../../../components/pages/WatchPageClient";
+import { use } from "react";
 
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string; episode: string };
+  params: Promise<{ slug: string; episode: string }>;
 }): Promise<Metadata> {
+  const resolvedParams = use(params);
   const snanime = SnAnimeService.getInstance();
-  const anime = await snanime.getAnimeInfo(params.slug);
-  const episodeNumber = params.episode;
+  const anime = await snanime.getAnimeInfo(resolvedParams.slug);
+  const episodeNumber = resolvedParams.episode;
 
   if (!anime) {
     return {
@@ -44,6 +46,14 @@ export async function generateMetadata({
   };
 }
 
-export default function WatchPage({ params }: { params: { slug: string; episode: string } }) {
-  return <WatchPageClient params={params} />;
+interface WatchPageProps {
+  params: Promise<{
+    slug: string;
+    episode: string;
+  }>;
+}
+
+
+export default function WatchPage({ params }: WatchPageProps) {
+  return <WatchPageClient unresolvedParams={params} />;
 }

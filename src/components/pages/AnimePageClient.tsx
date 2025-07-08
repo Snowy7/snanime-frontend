@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import AnimeDetails from "@/components/anime/AnimeDetails";
 import RelatedAnime from "@/components/anime/RelatedAnime";
 import EpisodeList from "@/components/anime/EpisodeList";
@@ -9,7 +9,13 @@ import RelatedStaff from "@/components/anime/RelatedStaff";
 import Loading from "@/components/Loading";
 import RecommendedAnime from "@/components/anime/RecommendedAnime";
 
-export default function AnimePageClient({ params }: { params: { slug: string } }) {
+interface AnimePageProps {
+  unresolvedParams: Promise<{
+    slug: string;
+  }>;
+}
+
+export default function AnimePageClient({ unresolvedParams }: AnimePageProps) {
   const [animeData, setAnimeData] = useState<SnAnimeData | null>(null);
   const [anilistAnime, setAnilistAnime] = useState<AnilistAnime | null>(null);
   const [loadingEpisodes, setLoadingEpisodes] = useState(true);
@@ -17,6 +23,8 @@ export default function AnimePageClient({ params }: { params: { slug: string } }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { getAnimeById, getAnilistAnimeById, getAnimeEpisodes } = useAnime();
+
+  const params = use(unresolvedParams);
 
   useEffect(() => {
     const fetchAnimeData = async () => {

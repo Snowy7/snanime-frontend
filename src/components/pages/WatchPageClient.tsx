@@ -1,13 +1,22 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import EpisodePlayer from "@/components/anime/EpisodePlayer";
 import { useAnime } from "@/context/AnimeContext";
 
-export default function WatchPageClient({ params }: { params: { slug: string; episode: string } }) {
+interface WatchPageProps {
+  unresolvedParams: Promise<{
+    slug: string;
+    episode: string;
+  }>;
+}
+
+export default function WatchPageClient({ unresolvedParams }: WatchPageProps) {
   const [episodeDetails, setEpisodeDetails] = useState<SnEpisodeDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { getAnimeEpisode } = useAnime();
+
+  const params = use(unresolvedParams);
 
   useEffect(() => {
     const fetchData = async () => {
