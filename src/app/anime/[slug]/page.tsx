@@ -1,14 +1,13 @@
 import { Metadata } from "next";
 import { SnAnimeService } from "@/services/snanime";
 import AnimePageClient from "../../../components/pages/AnimePageClient";
-import { use } from "react";
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const resolvedParams = use(params);
+  const resolvedParams = await params;
   const snanime = SnAnimeService.getInstance();
   const anime = await snanime.getAnimeInfo(resolvedParams.slug);
 
@@ -23,6 +22,7 @@ export async function generateMetadata({
   const description = anime.description || `Watch ${anime.title} on SnAnime.`;
 
   return {
+    metadataBase: new URL("https://snanime.snowydev.xyz"),
     title,
     description,
     openGraph: {
