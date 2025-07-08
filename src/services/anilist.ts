@@ -234,7 +234,7 @@ class AniListService {
     return AniListService.instance;
   }
 
-  private mapAniListToAnime(media: AniListMedia): Anime {
+  private mapAniListToAnime(media: AniListMedia): AnilistAnime {
     const title = media.title.english || media.title.romaji || media.title.userPreferred || "Unknown Title";
     const year = media.startDate?.year || media.seasonYear || 0;
     const rating = (media.averageScore || media.meanScore || 0) / 10; // Convert from 0-100 to 0-10 scale
@@ -319,7 +319,7 @@ class AniListService {
     }
   }
 
-  public async getAnimeById(id: number): Promise<Anime> {
+  public async getAnimeById(id: number): Promise<AnilistAnime> {
     if (!id) throw new NoIdException("anime");
 
     const query = `
@@ -428,7 +428,7 @@ class AniListService {
     return this.mapAniListToAnime(response.data.Media);
   }
 
-  public async getAnimeByMalId(malId: number): Promise<Anime> {
+  public async getAnimeByMalId(malId: number): Promise<AnilistAnime> {
     if (!malId) throw new NoIdException("anime");
 
     const query = `
@@ -537,7 +537,7 @@ class AniListService {
     return this.mapAniListToAnime(response.data.Media);
   }
 
-  public async getTopAnime(page: number = 1, perPage: number = 10): Promise<Anime[]> {
+  public async getTopAnime(page: number = 1, perPage: number = 10): Promise<AnilistAnime[]> {
     const query = `
       query GetTopAnime($page: Int, $perPage: Int) {
         Page(page: $page, perPage: $perPage) {
@@ -603,7 +603,7 @@ class AniListService {
     return response.data.Page.media.map((media) => this.mapAniListToAnime(media));
   }
 
-  public async getPopularAnime(page: number = 1, perPage: number = 10): Promise<Anime[]> {
+  public async getPopularAnime(page: number = 1, perPage: number = 10): Promise<AnilistAnime[]> {
     const query = `
       query GetPopularAnime($page: Int, $perPage: Int) {
         Page(page: $page, perPage: $perPage) {
@@ -669,7 +669,7 @@ class AniListService {
     return response.data.Page.media.map((media) => this.mapAniListToAnime(media));
   }
 
-  public async getTrendingAnime(page: number = 1, perPage: number = 10): Promise<Anime[]> {
+  public async getTrendingAnime(page: number = 1, perPage: number = 10): Promise<AnilistAnime[]> {
     const query = `
       query GetTrendingAnime($page: Int, $perPage: Int) {
         Page(page: $page, perPage: $perPage) {
@@ -735,7 +735,7 @@ class AniListService {
     return response.data.Page.media.map((media) => this.mapAniListToAnime(media));
   }
 
-  public async getLatestAnime(page: number = 1, perPage: number = 10): Promise<Anime[]> {
+  public async getLatestAnime(page: number = 1, perPage: number = 10): Promise<AnilistAnime[]> {
     const query = `
       query GetLatestAnime($page: Int, $perPage: Int) {
         Page(page: $page, perPage: $perPage) {
@@ -801,7 +801,7 @@ class AniListService {
     return response.data.Page.media.map((media) => this.mapAniListToAnime(media));
   }
 
-  public async searchAnime(searchTerm: string, page: number = 1, perPage: number = 10): Promise<Anime[]> {
+  public async searchAnime(searchTerm: string, page: number = 1, perPage: number = 10): Promise<AnilistAnime[]> {
     if (!searchTerm.trim()) {
       throw new Error("Search term cannot be empty");
     }
@@ -875,7 +875,7 @@ class AniListService {
     return response.data.Page.media.map((media) => this.mapAniListToAnime(media));
   }
 
-  public async getSeasonalAnime(season: string, year: number, page: number = 1, perPage: number = 10): Promise<Anime[]> {
+  public async getSeasonalAnime(season: string, year: number, page: number = 1, perPage: number = 10): Promise<AnilistAnime[]> {
     const seasonEnum = season.toUpperCase();
 
     const query = `
@@ -948,7 +948,7 @@ class AniListService {
     return response.data.Page.media.map((media) => this.mapAniListToAnime(media));
   }
 
-  public async getAnimeByGenre(genre: string, page: number = 1, perPage: number = 10): Promise<Anime[]> {
+  public async getAnimeByGenre(genre: string, page: number = 1, perPage: number = 10): Promise<AnilistAnime[]> {
     const query = `
       query GetAnimeByGenre($genre: String, $page: Int, $perPage: Int) {
         Page(page: $page, perPage: $perPage) {

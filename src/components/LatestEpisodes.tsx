@@ -5,7 +5,7 @@ import LatestEpisodeCard from "./cards/LatestEpisodeCard";
 
 interface GridSectionProps {
   title: string;
-  shows: LatestEpisode[];
+  shows: SnAnimeRecentlyUpdated[];
   onViewAllClick?: () => void;
   className?: string;
 }

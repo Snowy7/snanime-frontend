@@ -1,6 +1,6 @@
 {
     "home": "Home",
-    "browse": "Browse",
+    "browse_": "Browse",
     "search": "Search",
     "news": "News",
     "try_premium": "Try Premium",
@@ -29,16 +29,90 @@
     "NOT_YET_RELEASED": "Not Yet Released",
     "CANCELLED": "Cancelled",
     "HIATUS": "Hiatus",
-    "ep_available": "Episode\\s Available",
-    "ep": "EP",
+    "ep_available": "Episode/s Available",
+    "ep": "Ep.",
     "Recent Searches": "Recent Searches",
     "No Recent Searches": "No Recent Searches",
     "Search History": "Search History",
     "Trending": "Trending",
     "Popular": "Popular",    "Clear": "Clear",
     "related_anime": "Related Anime",
+    "recommended_anime": "Recommended Anime",
     "characters": "Characters",
     "staff": "Staff",
+    "browse": {
+        "title": "Discover Anime",
+        "subtitle": "Find your next favorite anime from thousands of titles",
+        "searchPlaceholder": "Search for anime...",
+        "filters_.": "Filters",
+        "clearFilters": "Clear Filters",
+        "loading": "Loading awesome anime...",
+        "searchResults": "Search results for \"{{query}}\"",
+        "popularAnime": "Popular Anime",
+        "resultsFound": "{{count}} results found",
+        "noResults": {
+            "title": "No results found",
+            "description": "Try adjusting your search query or filters"
+        },
+        "filters": {
+            "title": "Filters",
+            "genres": "Genres",
+            "type": "Type",
+            "status": "Status",
+            "yearRange": "Year Range",
+            "ratingRange": "Rating Range",
+            "minYear": "Min Year",
+            "maxYear": "Max Year",
+            "minRating": "Min Rating",
+            "maxRating": "Max Rating",
+            "to": "to"
+        },
+        "sort": {
+            "popularDesc": "Most Popular",
+            "ratingDesc": "Highest Rated",
+            "yearDesc": "Newest First",
+            "yearAsc": "Oldest First",
+            "titleAsc": "A-Z",
+            "titleDesc": "Z-A"
+        },
+        "pagination": {
+            "previous": "Previous",
+            "next": "Next"
+        },
+        "genres": {
+            "action": "Action",
+            "adventure": "Adventure",
+            "comedy": "Comedy",
+            "drama": "Drama",
+            "fantasy": "Fantasy",
+            "horror": "Horror",
+            "mystery": "Mystery",
+            "romance": "Romance",
+            "scifi": "Sci-Fi",
+            "sliceoflife": "Slice of Life",
+            "sports": "Sports",
+            "supernatural": "Supernatural",
+            "thriller": "Thriller",
+            "mecha": "Mecha",
+            "music": "Music",
+            "psychological": "Psychological",
+            "historical": "Historical",
+            "military": "Military"
+        },
+        "types": {
+            "tv": "TV",
+            "movie": "Movie",
+            "ova": "OVA",
+            "ona": "ONA",
+            "special": "Special",
+            "music": "Music"
+        },
+        "status": {
+            "airing": "Airing",
+            "finishedairing": "Finished Airing",
+            "notyetaired": "Not Yet Aired"
+        }
+    },
     "newsPage": {
         "title": "Anime News",
         "subtitle": "Stay updated with the latest anime news and announcements",

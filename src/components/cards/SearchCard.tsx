@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Star, Calendar, Play } from "lucide-react";
 
 interface SearchCardProps {
-  anime: Anime;
+  anime: AnilistAnime;
   viewMode?: "grid" | "list";
 }
 

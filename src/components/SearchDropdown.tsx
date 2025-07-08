@@ -25,7 +25,7 @@ interface QuickResult {
   title: string;
   posterUrl: string;
   type: string;
-  year: number;
+  duration: string;
 }
 
 const SearchDropdown: React.FC<SearchDropdownProps> = ({ isExpanded, onToggle, onClose }) => {
@@ -71,13 +71,13 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ isExpanded, onToggle, o
 
     setIsLoading(true);
     try {
-      const results = await snAnimeService.searchAnime(query, 1, 6);
-      const quickResults: QuickResult[] = results.items.map((anime) => ({
+      const response = await snAnimeService.searchAnime(query, "en");
+      const quickResults: QuickResult[] = response.results.map((anime) => ({
         id: anime.id,
         title: anime.title,
-        posterUrl: anime.posterUrl,
+        posterUrl: anime.image,
         type: anime.type,
-        year: anime.year || new Date().getFullYear(),
+        duration: anime.duration,
       }));
       setSearchResults(quickResults);
     } catch (error) {
@@ -250,7 +250,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ isExpanded, onToggle, o
                             <div className="flex-1 min-w-0">
                               <h4 className="text-sm font-medium text-white group-hover:text-blue-400 truncate transition-colors">{anime.title}</h4>
                               <p className="text-xs text-neutral-400">
-                                {anime.type} • {anime.year}
+                                {anime.type} • {anime.duration}
                               </p>
                             </div>
                           </Link>

@@ -6,7 +6,7 @@ import { Play, Calendar, Clock, Eye, Download } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 interface EpisodeListProps {
-  episodes: PaginatedResult<AnimeEpisode>;
+  episodes: SnAnimeEpisode[];
   animeTitle: string;
   animeId: string;
   animeDescription?: string;
@@ -24,14 +24,14 @@ const EpisodeList: React.FC<EpisodeListProps> = ({
   loadingMore = false,
   hasMore = false
 }) => {
-  const [selectedEpisode, setSelectedEpisode] = useState<AnimeEpisode | null>(null);
+  const [selectedEpisode, setSelectedEpisode] = useState<SnAnimeEpisode | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const { t } = useLanguage();
 
-  const handleEpisodeClick = (episode: AnimeEpisode) => {
+  const handleEpisodeClick = (episode: SnAnimeEpisode) => {
     setSelectedEpisode(episode);
     // TODO: Navigate to episode player
-    console.log(`Playing episode ${episode.episodeNumber}: ${episode.title}`);
+    console.log(`Playing episode ${episode.number}: ${episode.title}`);
   };
 
   const formatDate = (dateString: string) => {
@@ -64,7 +64,7 @@ const EpisodeList: React.FC<EpisodeListProps> = ({
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{t("episodes")}</h2>
           <p className="text-neutral-400">
-            {episodes.total} {t("ep_available")}
+            {episodes.length} {t("ep_available")}
           </p>
         </div>
 
@@ -92,12 +92,12 @@ const EpisodeList: React.FC<EpisodeListProps> = ({
       {/* List View */}
       {viewMode === "list" && (
         <div className="grid gap-4">
-          {episodes.items.map((episode) => (
+          {episodes.map((episode) => (
             <Link
-              key={episode.episodeNumber}
-              href={`/anime/${animeId}/watch/${episode.episodeNumber}`}
+              key={episode.number}
+              href={`/anime/${animeId}/watch/${episode.number}`}
               className={`group relative overflow-hidden rounded-lg bg-neutral-900/50 backdrop-blur-sm border border-neutral-800 hover:border-neutral-600 transition-all duration-300 hover:bg-neutral-800/50 hover:scale-[1.01] hover:shadow-xl ${
-                selectedEpisode?.episodeNumber === episode.episodeNumber ? "ring-2 ring-red-500 bg-neutral-800/70" : ""
+                selectedEpisode?.number === episode.number ? "ring-2 ring-red-500 bg-neutral-800/70" : ""
               }`}
             >
               <div className="flex flex-col sm:flex-row gap-4 p-4">
@@ -106,7 +106,7 @@ const EpisodeList: React.FC<EpisodeListProps> = ({
                   {episode.thumbnail ? (
                     <Image
                       src={episode.thumbnail}
-                      alt={`${animeTitle} Episode ${episode.episodeNumber}`}
+                      alt={`${animeTitle} Episode ${episode.number}`}
                       fill
                       style={{ objectFit: "cover" }}
                       className="transition-transform duration-300 group-hover:scale-105"
@@ -126,7 +126,7 @@ const EpisodeList: React.FC<EpisodeListProps> = ({
 
                   {/* Episode Number Badge */}
                   <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-white text-sm font-semibold px-2 py-1 rounded">
-                    {t("ep")} {episode.episodeNumber}
+                    {t("ep")} {episode.number}
                   </div>
 
                   {/* Watched Indicator */}
@@ -140,7 +140,7 @@ const EpisodeList: React.FC<EpisodeListProps> = ({
                 {/* Episode Info */}
                 <div className="flex-1 min-w-0">
                   <div className="space-y-2">
-                    <h3 className="text-lg font-semibold text-white group-hover:text-red-400 transition-colors">{episode.title ? `${episode.title}` : `${t("episode")} ${episode.episodeNumber}`}</h3>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-red-400 transition-colors">{episode.title ? `${episode.title}` : `${t("episode")} ${episode.number}`}</h3>
 
                     <p className="text-sm text-neutral-400 line-clamp-2">{episode.description ? episode.description : animeDescription}</p>
 
@@ -168,10 +168,10 @@ const EpisodeList: React.FC<EpisodeListProps> = ({
       {/* Grid View */}
       {viewMode === "grid" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {episodes.items.map((episode) => (
+          {episodes.map((episode) => (
             <Link
-              key={episode.episodeNumber}
-              href={`/anime/${animeId}/watch/${episode.episodeNumber}`}
+              key={episode.number}
+              href={`/anime/${animeId}/watch/${episode.number}`}
               className="group relative overflow-hidden rounded-lg bg-neutral-900/50 backdrop-blur-sm border-0 transition-all duration-300 hover:bg-neutral-800/50 hover:shadow-xl"
             >
               {/* Episode Thumbnail */}
@@ -179,7 +179,7 @@ const EpisodeList: React.FC<EpisodeListProps> = ({
                 {episode.thumbnail ? (
                   <Image
                     src={episode.thumbnail}
-                    alt={`${animeTitle} Episode ${episode.episodeNumber}`}
+                    alt={`${animeTitle} Episode ${episode.number}`}
                     fill
                     style={{ objectFit: "cover" }}
                     className="transition-transform duration-300 group-hover:scale-110"
@@ -199,7 +199,7 @@ const EpisodeList: React.FC<EpisodeListProps> = ({
 
                 {/* Episode Number Badge */}
                 <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-white text-sm font-semibold px-2 py-1 rounded">
-                  {t("ep")} {episode.episodeNumber}
+                  {t("ep")} {episode.number}
                 </div>
 
                 {/* Watched Indicator */}
@@ -218,7 +218,7 @@ const EpisodeList: React.FC<EpisodeListProps> = ({
               {/* Episode Info */}
               <div className="absolute w-full h-12 bottom-0 left-0 opacity-0 group-hover:opacity-100 bg-gradient-to-t from-black/80 to-transparent transition-all flex items-center justify-center px-2">
                 <h3 className="text-sm font-semibold text-white group-hover:text-red-400 transition-colors truncate text-center w-full">
-                  {episode.title ? `${episode.title}` : `${t("episode")} ${episode.episodeNumber}`}                </h3>
+                  {episode.title ? `${episode.title}` : `${t("episode")} ${episode.number}`}                </h3>
               </div>
             </Link>
           ))}
@@ -245,7 +245,7 @@ const EpisodeList: React.FC<EpisodeListProps> = ({
         </div>
       )}
 
-      {episodes.total === 0 && (
+      {episodes.length === 0 && (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">📺</div>
           <h3 className="text-xl font-semibold text-white mb-2">No Episodes Available</h3>

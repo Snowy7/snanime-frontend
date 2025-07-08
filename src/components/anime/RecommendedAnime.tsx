@@ -6,12 +6,12 @@ import { NavigationButton } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
-interface RelatedAnimeProps {
-  relatedAnime: SnAnimeRelated[];
+interface RecommendedAnimeProps {
+  recommendations: SnAnimeRecommendations[];
   className?: string;
 }
 
-const RelatedAnime: React.FC<RelatedAnimeProps> = ({ relatedAnime, className = "" }) => {
+const RecommendedAnime: React.FC<RecommendedAnimeProps> = ({ recommendations: relatedAnime, className = "" }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -178,7 +178,7 @@ const RelatedAnime: React.FC<RelatedAnimeProps> = ({ relatedAnime, className = "
   return (
     <section className={`py-8 md:py-12 ${className}`}>
       <SectionTitle 
-        title={t("related_anime")} 
+        title={t("recommended_anime")} 
         onViewAllClick={relatedAnime.length > 6 ? handleViewAll : undefined} 
       />
 
@@ -238,4 +238,4 @@ const RelatedAnime: React.FC<RelatedAnimeProps> = ({ relatedAnime, className = "
   );
 };
 
-export default RelatedAnime;
+export default RecommendedAnime;

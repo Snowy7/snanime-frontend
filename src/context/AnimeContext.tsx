@@ -3,17 +3,27 @@ import Loading from "@/components/Loading";
 import React, { createContext, useContext, ReactNode, useEffect } from "react";
 import { AniListService } from "@/services/anilist";
 import { SnAnimeService } from "@/services/snanime";
+import { SpotlightAnime } from "../../../test/aniwatch/src/hianime/types/anime";
 
 interface AnimeContextType {
   isLoading: boolean;
-  getTopAnimes: () => Promise<Anime[]>;
-  getAnimes: () => Promise<Anime[]>;
-  getAnimeById: (id: string) => Promise<Anime | null>;
-  searchAnimes: (query: string, page: number, perPage: number) => Promise<PaginatedResult<SearchResult>>;
-  getAnimesByGenre: (genre: string) => Promise<Anime[]>;
-  getLatestEpisodes: () => Promise<LatestEpisode[]>;
-  getAnimeEpisodes: (id: string, page: number, perPage: number) => Promise<PaginatedResult<AnimeEpisode>>;
-  getAnimeEpisode(id: string, episodeNumber: string): Promise<EpisodeDetails | null>;
+  getTopAnimes: () => Promise<SnAnimePaginatedResult<SnAnimeSpotlight>>;
+  getAnimes: () => Promise<AnilistAnime[]>;
+  getAnimeById: (id: string) => Promise<SnAnimeData | null>;
+  getAnilistAnimeById: (id: string) => Promise<AnilistAnime | null>;
+  searchAnimes: (
+    query: string,
+    page: number,
+    perPage: number
+  ) => Promise<SnAnimePaginatedResult<SnAnimeSearchResult>>;
+  getAnimesByGenre: (genre: string) => Promise<AnilistAnime[]>;
+  getLatestEpisodes: () => Promise<SnAnimePaginatedResult<SnAnimeRecentlyUpdated>>;
+  getAnimeEpisodes: (
+    id: string,
+    page: number,
+    perPage: number
+  ) => Promise<PaginatedResult<SnAnimeEpisode>>;
+  getAnimeEpisode(id: string, episodeNumber: string): Promise<SnEpisodeDetails | null>;
 }
 
 const AnimeContext = createContext<AnimeContextType | undefined>(undefined);
@@ -47,19 +57,25 @@ export const AnimeProvider: React.FC<AnimeProviderProps> = ({ children }) => {
   };
 
   // Define the methods that will be provided by the context
-  const getTopAnimes = async (): Promise<Anime[]> => {
+  const getTopAnimes = async (): Promise<SnAnimePaginatedResult<SnAnimeSpotlight>> => {
     incrementLoading();
     try {
-      const response = await snanime.getTopAnimes("ar");
+      const response = await snanime.getSpotlight("en");
       return response;
     } catch (error) {
       console.error("Error fetching top animes:", error);
-      return [];
+      return {
+        currentPage: 1,
+        hasNextPage: false,
+        totalPages: 0,
+        results: [],
+      };
     } finally {
       decrementLoading();
     }
   };
-  const getAnimes = async (): Promise<Anime[]> => {
+
+  const getAnimes = async (): Promise<AnilistAnime[]> => {
     incrementLoading();
     try {
       // Placeholder for fetching all animes
@@ -72,42 +88,25 @@ export const AnimeProvider: React.FC<AnimeProviderProps> = ({ children }) => {
     }
   };
 
-  const getAnimeById = async (id: string): Promise<Anime | null> => {
+  const getAnimeById = async (id: string): Promise<SnAnimeData | null> => {
     incrementLoading();
     try {
       if (!id) {
         console.warn("getAnimeById called with empty id");
         return null;
       }
-      // convert id to number if it's a string
-      const numericId = typeof id === "string" ? parseInt(id, 10) : id;
-      if (isNaN(numericId)) {
-        console.warn("getAnimeById called with invalid id:", id);
-        return null;
-      }
 
       // run both in parallel
-      const [arabicAnime, defaultAnime] = await Promise.all([snanime.getAnimeByMalId(numericId), anilist.getAnimeByMalId(numericId)]);
+      //const [arabicAnime, defaultAnime] = await Promise.all([snanime.getAnimeByMalId(numericId), anilist.getAnimeByMalId(numericId)]);
+      const arabicAnime = await snanime.getAnimeInfo(id); // Placeholder for Arabic anime, replace with actual call if needed
+      // const defaultAnime = await anilist.getAnimeByMalId(arabicAnime?.malID)
 
       if (arabicAnime) {
-        arabicAnime.bannerUrl = defaultAnime?.bannerUrl || arabicAnime.bannerUrl;
-        arabicAnime.posterUrl = defaultAnime?.posterUrl || arabicAnime.posterUrl;
-        arabicAnime.characters = defaultAnime?.characters || arabicAnime.characters;
-        arabicAnime.staff = defaultAnime?.staff || arabicAnime.staff;
+        arabicAnime.banner = arabicAnime.image;
         return arabicAnime;
       }
 
-      console.warn("No anime found with id:", numericId);
-      if (defaultAnime) {
-        // If no Arabic anime found, return the default anime
-        return {
-          ...defaultAnime,
-          id: numericId.toString(), // Ensure id is a string
-          sub: "ENG",
-        };
-      }
-
-      console.warn("No default anime found with id:", numericId);
+      console.warn("No anime found with id:", id);
       return null; // If no anime found, return null
     } catch (error) {
       console.error("Error fetching anime by ID:", error);
@@ -117,25 +116,52 @@ export const AnimeProvider: React.FC<AnimeProviderProps> = ({ children }) => {
     }
   };
 
-  const searchAnimes = async (query: string, page: number, perPage: number): Promise<PaginatedResult<SearchResult>> => {
+  const getAnilistAnimeById = async (id: string): Promise<AnilistAnime | null> => {
+    incrementLoading();
     try {
-      const response = await snanime.searchAnime(query, page, perPage);
+      if (!id) {
+        console.warn("getAnilistAnimeById called with empty id");
+        return null;
+      }
+
+      // convert id to number if it's a string
+      const numericId = typeof id === "string" ? parseInt(id, 10) : id;
+      if (isNaN(numericId)) {
+        console.warn("getAnilistAnimeById called with invalid id:", id);
+        return null;
+      }
+
+      const response = await anilist.getAnimeByMalId(numericId);
+      return response;
+    } catch (error) {
+      console.error("Error fetching Anilist anime by ID:", error);
+      return null;
+    } finally {
+      decrementLoading();
+    }
+  };
+
+  const searchAnimes = async (
+    query: string,
+    page: number,
+    perPage: number
+  ): Promise<SnAnimePaginatedResult<SnAnimeSearchResult>> => {
+    try {
+      const response = await snanime.searchAnime(query, "en");
       return response;
     } catch (error) {
       console.error("Error searching animes:", error);
       return {
-        items: [],
-        total: 0,
-        page: 1,
-        limit: 10,
+        currentPage: 1,
         hasNextPage: false,
-        hasPreviousPage: false,
+        totalPages: 0,
+        results: [],
       };
     } finally {
     }
   };
 
-  const getAnimesByGenre = async (genre: string): Promise<Anime[]> => {
+  const getAnimesByGenre = async (genre: string): Promise<AnilistAnime[]> => {
     incrementLoading();
     try {
       // Placeholder for fetching animes by genre
@@ -148,22 +174,31 @@ export const AnimeProvider: React.FC<AnimeProviderProps> = ({ children }) => {
     }
   };
 
-  const getLatestEpisodes = async (): Promise<LatestEpisode[]> => {
+  const getLatestEpisodes = async (): Promise<SnAnimePaginatedResult<SnAnimeRecentlyUpdated>> => {
     incrementLoading();
     try {
-      const response = await snanime.getLatestEpisodes("ar");
+      const response = await snanime.getLatestEpisodes("en");
       return response;
     } catch (error) {
       console.error("Error fetching latest episodes:", error);
-      return [];
+      return {
+        currentPage: 1,
+        hasNextPage: false,
+        totalPages: 0,
+        results: [],
+      };
     } finally {
       decrementLoading();
     }
   };
-  const getAnimeEpisodes = async (id: string, page: number, perPage: number): Promise<PaginatedResult<AnimeEpisode>> => {
+  const getAnimeEpisodes = async (
+    id: string,
+    page: number,
+    perPage: number
+  ): Promise<PaginatedResult<SnAnimeEpisode>> => {
     incrementLoading();
     try {
-      const response = await snanime.getAnimeEpisodes(id, page, perPage);
+      const response = {} as PaginatedResult<SnAnimeEpisode>; // await snanime.getAnimeEpisodes(id, page, perPage);
       return response;
     } catch (error) {
       console.error("Error fetching anime episodes:", error);
@@ -180,26 +215,30 @@ export const AnimeProvider: React.FC<AnimeProviderProps> = ({ children }) => {
     }
   };
 
-  const getAnimeEpisode = async (id: string, episodeNumber: string): Promise<EpisodeDetails | null> => {
+  const getAnimeEpisode = async (
+    id: string,
+    episodeNumber: string
+  ): Promise<SnEpisodeDetails | null> => {
     incrementLoading();
     try {
       if (!id || !episodeNumber) {
         console.warn("getAnimeEpisode called with empty id or episodeNumber");
         return null;
       }
-      // convert id to number if it's a string
-      const numericId = typeof id === "string" ? parseInt(id, 10) : id;
-      if (isNaN(numericId)) {
-        console.warn("getAnimeEpisode called with invalid id:", id);
-        return null;
-      }
+
       // convert episodeNumber to number if it's a string
-      const numericEpisodeNumber = typeof episodeNumber === "string" ? parseInt(episodeNumber, 10) : episodeNumber;
+      const numericEpisodeNumber =
+        typeof episodeNumber === "string" ? parseInt(episodeNumber, 10) : episodeNumber;
       if (isNaN(numericEpisodeNumber)) {
         console.warn("getAnimeEpisode called with invalid episodeNumber:", episodeNumber);
         return null;
       }
-      const response = await snanime.getAnimeEpisode(numericId.toString(), numericEpisodeNumber);
+
+      const response = await snanime.getAnimeEpisode(id, numericEpisodeNumber, "en");
+      if (!response || !response.streams || response.streams.length === 0) {
+        console.warn("No streams found for episode:", id, "Episode Number:", episodeNumber);
+        return null;
+      }
       return response;
     } catch (error) {
       console.error("Error fetching anime episode:", error);
@@ -219,6 +258,7 @@ export const AnimeProvider: React.FC<AnimeProviderProps> = ({ children }) => {
     getLatestEpisodes,
     getAnimeEpisodes,
     getAnimeEpisode,
+    getAnilistAnimeById,
   };
   return (
     <AnimeContext.Provider value={value}>

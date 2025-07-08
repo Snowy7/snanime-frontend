@@ -16,7 +16,8 @@ const nextConfig: NextConfig = {
       "cdn.myanimelist.net",
       "anime4up.rest",
       "cdn.anime-planet.com",
-      "raw.githubusercontent.com"
+      "raw.githubusercontent.com",
+      "cdn.noitatnemucod.net"
     ]
   }
 };

@@ -1,6 +1,9 @@
+const url = process.env.NEXT_PUBLIC_SNANIME_URL || "http://localhost:5000/api/v1";
+
 class SnAnimeService {
   private static instance: SnAnimeService;
-  url = "http://snanime-api.snowydev.xyz";
+
+  private constructor() {}
 
   public static getInstance(): SnAnimeService {
     if (!SnAnimeService.instance) {
@@ -9,130 +12,81 @@ class SnAnimeService {
     return SnAnimeService.instance;
   }
 
-  public async getLatestEpisodes(language: string): Promise<LatestEpisode[]> {
+  public async getSpotlight(
+    language: string = "en"
+  ): Promise<SnAnimePaginatedResult<SnAnimeSpotlight>> {
     try {
-      const response = await fetch(`${this.url}/anime/latest?language=${language}`);
+      const response = await fetch(`${url}/anime/spotlight?language=${language}`);
       if (!response.ok) {
-        throw new Error(`Error fetching latest episodes: ${response.statusText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      return data
-        .map((anime: any) => {
-          if (!anime.title || anime.id < 0) {
-            console.warn("Skipping anime with missing title or invalid id:", anime);
-            return null; // Skip this anime
-          }
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching spotlight:", error);
+      throw error;
+    }
+  }
 
-          return {
-            id: anime.id,
-            title: anime.title,
-            episode: anime.episode,
-            posterUrl: anime.posterUrl,
-            episodeNumber: anime.episodeNumber,
-            type: anime.type?.toUpperCase() || "Unknown",
-            rating: anime.rating,
-            year: anime.year || new Date().getFullYear(),
-          } as LatestEpisode;
-        })
-        .filter((anime: any) => anime !== null); // Filter out null values
+  public async getLatestEpisodes(
+    language: string = "en"
+  ): Promise<SnAnimePaginatedResult<SnAnimeRecentlyUpdated>> {
+    try {
+      const response = await fetch(`${url}/anime/latest-episodes?language=${language}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
     } catch (error) {
       console.error("Error fetching latest episodes:", error);
-      throw new Error("Failed to fetch latest episodes");
+      throw error;
     }
   }
 
-  public async getTopAnimes(language: string): Promise<Anime[]> {
+  public async getAnimeInfo(animeId: string, language: string = "en"): Promise<SnAnimeData> {
     try {
-      const response = await fetch(`${this.url}/anime/top?language=${language}`);
+      const response = await fetch(`${url}/anime/info/${animeId}?language=${language}`);
       if (!response.ok) {
-        throw new Error(`Error fetching top animes: ${response.statusText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      return data
-        .map((anime: any) => {
-          if (!anime.title || anime.id < 0) {
-            console.warn("Skipping anime with missing title or invalid id:", anime);
-            return null; // Skip this anime
-          }
-
-          return anime as Anime; // Assuming the API returns data in the correct format
-        })
-        .filter((anime: any) => anime !== null); // Filter out null values
+      return await response.json();
     } catch (error) {
-      console.error("Error fetching top animes:", error);
-      throw new Error("Failed to fetch top animes");
+      console.error("Error fetching anime info:", error);
+      throw error;
     }
   }
 
-  public async getAnimeByMalId(id: string | number): Promise<Anime | null> {
+  public async getAnimeEpisode(
+    animeId: string,
+    episodeNumber: number,
+    language: string = "en"
+  ): Promise<SnEpisodeDetails> {
     try {
-      const response = await fetch(`${this.url}/anime/mal/${id}`);
+      const response = await fetch(
+        `${url}/anime/watch?animeId=${animeId}&episodeNumber=${episodeNumber}&language=${language}`
+      );
       if (!response.ok) {
-        throw new Error(`Error fetching anime by MAL ID: ${response.statusText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      return data as Anime;
+      return await response.json();
     } catch (error) {
-      console.error("Error fetching anime by MAL ID:", error);
-      throw new Error("Failed to fetch anime by MAL ID");
+      console.error("Error fetching anime episode streams:", error);
+      throw error;
     }
   }
 
-  public async getAnimeEpisodes(id: string, page: number = 1, perPage: number = 10): Promise<PaginatedResult<AnimeEpisode>> {
+  public async searchAnime(
+    query: string,
+    language: string = "en"
+  ): Promise<SnAnimePaginatedResult<SnAnimeSearchResult>> {
     try {
-      const response = await fetch(`${this.url}/anime/${id}/episodes?page=${page}&limit=${perPage}`);
+      const response = await fetch(`${url}/anime/search?query=${query}&language=${language}`);
       if (!response.ok) {
-        throw new Error(`Error fetching anime episodes: ${response.statusText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      return {
-        ...data,
-        items: data.items.map((episode: any) => ({
-          title: episode.title,
-          thumbnail: episode.thumbnail,
-          episodeNumber: episode.episodeNumber,
-          episodeString: episode.episodeString,
-          duration: episode.duration,
-          description: episode.description || "",
-        })) as AnimeEpisode[],
-      } as PaginatedResult<AnimeEpisode>;
-    } catch (error) {
-      console.error("Error fetching anime episodes:", error);
-      throw new Error("Failed to fetch anime episodes");
-    }
-  }
-
-  public async getAnimeEpisode(id: string, episodeNumber: number): Promise<EpisodeDetails | null> {
-    try {
-      const response = await fetch(`${this.url}/anime/${id}/episode/${episodeNumber}`);
-      if (!response.ok) {
-        throw new Error(`Error fetching anime episode: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return data as EpisodeDetails;
-    } catch (error) {
-      console.error("Error fetching anime episode:", error);
-      throw new Error("Failed to fetch anime episode");
-    }
-  }
-
-  public async searchAnime(query: string, page: number = 1, perPage: number = 10): Promise<PaginatedResult<SearchResult>> {
-    try {
-      const response = await fetch(`${this.url}/anime/search?query=${encodeURIComponent(query)}&page=${page}&limit=${perPage}`);
-      if (!response.ok) {
-        throw new Error(`Error searching anime: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return {
-        ...data,
-        items: data.items.map((anime: any) => ({
-          ...anime,
-          id: anime.id || -1, // Ensure id is always a number
-        })) as Anime[],
-      } as PaginatedResult<SearchResult>;
+      return await response.json();
     } catch (error) {
       console.error("Error searching anime:", error);
-      throw new Error("Failed to search anime");
+      throw error;
     }
   }
 }

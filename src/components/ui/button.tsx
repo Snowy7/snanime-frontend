@@ -3,7 +3,7 @@
 import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-// NavigationButton (assuming it's fine as is, or add className if needed)
+// NavigationButton - Modern Acrylic Design
 export const NavigationButton = ({ direction, onClick, className = "" }: { direction: "left" | "right"; onClick: () => void; className?: string }) => {
   const isLeft = direction === "left";
   const Icon = isLeft ? ChevronLeft : ChevronRight;
@@ -12,21 +12,77 @@ export const NavigationButton = ({ direction, onClick, className = "" }: { direc
   return (
     <button
       onClick={onClick}
-      className={`cursor-pointer absolute ${position} top-1/2 -translate-y-1/2 w-14 h-14 bg-black/40 hover:bg-black/70 rounded-full flex items-center justify-center transition-all duration-300 backdrop-blur-sm border-0 border-t-1 border-white/20 z-30 hover:scale-110 hover:shadow-xl hover:border-white/40 group ${className}`}
+      className={`cursor-pointer absolute ${position} top-1/2 -translate-y-1/2 w-16 h-16 group flex items-center justify-center ${className}`}
+      style={{
+        background: `
+          linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.08) 0%, 
+            rgba(255, 255, 255, 0.02) 50%, 
+            rgba(0, 0, 0, 0.2) 100%
+          )
+        `,
+        backdropFilter: 'blur(20px) saturate(180%)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '50%',
+        boxShadow: `
+          0 8px 32px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+        `,
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = `
+          0 12px 48px rgba(0, 0, 0, 0.6),
+          0 0 20px rgba(255, 255, 255, 0.05),
+          inset 0 1px 0 rgba(255, 255, 255, 0.15),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.3)
+        `;
+        e.currentTarget.style.background = `
+          linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.12) 0%, 
+            rgba(255, 255, 255, 0.04) 50%, 
+            rgba(0, 0, 0, 0.1) 100%
+          )
+        `;
+        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = `
+          0 8px 32px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+        `;
+        e.currentTarget.style.background = `
+          linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.08) 0%, 
+            rgba(255, 255, 255, 0.02) 50%, 
+            rgba(0, 0, 0, 0.2) 100%
+          )
+        `;
+        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+      }}
     >
-      <Icon className={`w-7 h-7 text-white transition-transform duration-200 group-hover:scale-110 ${isLeft ? "group-hover:-translate-x-0.5" : "group-hover:translate-x-0.5"}`} />
+      <Icon 
+        className={`w-8 h-8 text-white transition-all duration-300 group-hover:scale-110 ${
+          isLeft ? "group-hover:-translate-x-0.5" : "group-hover:translate-x-0.5"
+        }`}
+        style={{
+          filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))',
+        }}
+      />
     </button>
   );
 };
 
-// ControlButton (Modified for Navbar variants)
+// ControlButton - Premium Acrylic Design
 export const ControlButton = ({
   type,
   children,
   className = "",
   variant = "default",
-  iconOnly = false, // For navbar icon buttons
-  iconColorClass, // For specific icon coloring like premium
+  iconOnly = false,
+  iconColorClass,
   onClick,
 }: {
   type: "primary" | "save" | "share" | "premium" | "navbar-action";
@@ -37,120 +93,274 @@ export const ControlButton = ({
   iconColorClass?: string;
   onClick?: () => void;
 }) => {
-  let baseClasses = "cursor-pointer group relative flex items-center transition-all duration-300 font-medium";
-  let contentClasses = "relative z-10 flex items-center";
-  let hoverGradientDiv = null;
+  const getTypeStyles = () => {
+    const styles = {
+      primary: {
+        gradient: "linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(251, 146, 60, 0.08) 100%)",
+        hoverGradient: "linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(251, 146, 60, 0.12) 100%)",
+        accentColor: "rgb(239, 68, 68)",
+        glowColor: "rgba(239, 68, 68, 0.3)",
+      },
+      save: {
+        gradient: "linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(147, 51, 234, 0.08) 100%)",
+        hoverGradient: "linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(147, 51, 234, 0.12) 100%)",
+        accentColor: "rgb(59, 130, 246)",
+        glowColor: "rgba(59, 130, 246, 0.3)",
+      },
+      share: {
+        gradient: "linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(20, 184, 166, 0.08) 100%)",
+        hoverGradient: "linear-gradient(135deg, rgba(34, 197, 94, 0.18) 0%, rgba(20, 184, 166, 0.12) 100%)",
+        accentColor: "rgb(34, 197, 94)",
+        glowColor: "rgba(34, 197, 94, 0.3)",
+      },
+      premium: {
+        gradient: "linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(245, 158, 11, 0.08) 100%)",
+        hoverGradient: "linear-gradient(135deg, rgba(251, 191, 36, 0.18) 0%, rgba(245, 158, 11, 0.12) 100%)",
+        accentColor: "rgb(251, 191, 36)",
+        glowColor: "rgba(251, 191, 36, 0.3)",
+      },
+      "navbar-action": {
+        gradient: "linear-gradient(135deg, rgba(156, 163, 175, 0.12) 0%, rgba(107, 114, 128, 0.08) 100%)",
+        hoverGradient: "linear-gradient(135deg, rgba(156, 163, 175, 0.18) 0%, rgba(107, 114, 128, 0.12) 100%)",
+        accentColor: "rgb(156, 163, 175)",
+        glowColor: "rgba(156, 163, 175, 0.3)",
+      },
+    };
+    return styles[type] || styles.primary;
+  };
 
-  if (variant === "navbar") {
-    let specificGradient = "";
-    let specificHoverTextColor = "";
-    if (type === "premium") {
-      baseClasses += ` gap-3 bg-black/20 backdrop-blur-md text-white px-8 py-3 rounded-lg text-lg border-t border-white/30 hover:bg-black/80 hover:scale-105 hover:shadow-2xl transform hover:-translate-y-1 active:scale-95 ${className}`;
-      // Icon color is handled by cloning the icon child below
-      specificGradient = "from-yellow-100/20 to-yellow-400/20";
-      specificHoverTextColor = "group-hover:text-yellow-400";
-    } else if (type === "navbar-action") {
-      baseClasses += ` gap-3 bg-black/20 backdrop-blur-md text-white px-4 py-3 rounded-full text-lg border-t border-white/30 hover:bg-black/80 hover:scale-105 hover:shadow-2xl transform hover:-translate-y-1 active:scale-95 ${className}`;
-      // Children is the icon itself
-      specificGradient = "from-blue-800/20 to-red-800/20";
-      specificHoverTextColor = "group-hover:text-blue-300";
-    }
-
-    if (specificGradient) {
-      hoverGradientDiv = <div className={`absolute inset-0 bg-gradient-to-r ${specificGradient} opacity-5 ${type == "premium" ? "rounded-lg" : "rounded-full"} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>;
-    }
-    contentClasses += ` ${specificHoverTextColor}`;
-  } else {
-    // Default variant styles
-    baseClasses += ` gap-3 bg-black/20 backdrop-blur-md text-white px-8 py-3 rounded-lg text-lg border-t border-white/30 hover:bg-black/80 hover:scale-105 hover:shadow-2xl transform hover:-translate-y-1 active:scale-95 ${className}`;
-    contentClasses += " gap-3";
-    let specificGradient = "";
-    let specificHoverTextColor = "";
-
-    switch (type) {
-      case "primary":
-        specificGradient = "from-red-600/20 to-orange-600/20";
-        specificHoverTextColor = "group-hover:text-red-400";
-        break;
-      case "save":
-        specificGradient = "from-blue-600/20 to-purple-600/20";
-        specificHoverTextColor = "group-hover:text-blue-400";
-        break;
-      case "share":
-        specificGradient = "from-green-600/20 to-teal-600/20";
-        specificHoverTextColor = "group-hover:text-green-400";
-        break;
-      case "navbar-action":
-        specificGradient = "from-neutral-800/20 to-neutral-800/20";
-        specificHoverTextColor = "group-hover:text-neutral-300";
-        break;
-      default:
-        specificGradient = "from-gray-600/20 to-gray-600/20";
-        specificHoverTextColor = "group-hover:text-gray-400";
-        break;
-    }
-    if (specificGradient) {
-      hoverGradientDiv = <div className={`absolute inset-0 bg-gradient-to-r ${specificGradient} rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>;
-    }
-    contentClasses += ` ${specificHoverTextColor}`;
-  }
+  const typeStyles = getTypeStyles();
+  const isPrimary = type === "primary";
 
   return (
-    <button className={baseClasses} onClick={onClick} disabled={type === "premium" && !iconOnly}>
-      {hoverGradientDiv}
-      <div className={contentClasses}>
-        {variant === "navbar" && type === "premium" && React.Children.count(children) === 2
-          ? React.Children.map(children, (child, index) => {
-              if (index === 0 && React.isValidElement(child)) {
-                // First child is icon
-                const element = child as React.ReactElement<any>;
-                return React.cloneElement(element, {
-                  className: `${element.props.className || ""} ${iconColorClass || "text-yellow-400"}`, // Apply icon color
-                });
-              }
-              // Second child is text span
-              if (index === 1 && React.isValidElement(child)) {
-                const element = child as React.ReactElement<any>;
-                return React.cloneElement(element, {
-                  className: `${element.props.className || ""} ${iconColorClass ? "text-white" : "text-yellow-400/90"}`,
-                });
-              }
-              return child;
-            })
-          : children}
+    <button 
+      className={`cursor-pointer group relative overflow-hidden ${className}`}
+      onClick={onClick}
+      style={{
+        padding: isPrimary ? "16px 32px" : "12px 24px",
+        background: `
+          ${typeStyles.gradient},
+          linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.05) 0%, 
+            rgba(255, 255, 255, 0.01) 50%, 
+            rgba(0, 0, 0, 0.15) 100%
+          )
+        `,
+        backdropFilter: 'blur(20px) saturate(180%)',
+        border: `1px solid rgba(255, 255, 255, 0.1)`,
+        borderRadius: isPrimary ? '16px' : '12px',
+        boxShadow: `
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          0 2px 8px ${typeStyles.glowColor},
+          inset 0 1px 0 rgba(255, 255, 255, 0.1),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+        `,
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        fontSize: isPrimary ? '16px' : '14px',
+        fontWeight: '600',
+        color: 'white',
+        textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+        e.currentTarget.style.background = `
+          ${typeStyles.hoverGradient},
+          linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.08) 0%, 
+            rgba(255, 255, 255, 0.02) 50%, 
+            rgba(0, 0, 0, 0.1) 100%
+          )
+        `;
+        e.currentTarget.style.boxShadow = `
+          0 12px 48px rgba(0, 0, 0, 0.5),
+          0 4px 16px ${typeStyles.glowColor},
+          0 0 20px ${typeStyles.glowColor},
+          inset 0 1px 0 rgba(255, 255, 255, 0.15),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.25)
+        `;
+        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0) scale(1)';
+        e.currentTarget.style.background = `
+          ${typeStyles.gradient},
+          linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.05) 0%, 
+            rgba(255, 255, 255, 0.01) 50%, 
+            rgba(0, 0, 0, 0.15) 100%
+          )
+        `;
+        e.currentTarget.style.boxShadow = `
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          0 2px 8px ${typeStyles.glowColor},
+          inset 0 1px 0 rgba(255, 255, 255, 0.1),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+        `;
+        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+      }}
+      onMouseDown={(e) => {
+        e.currentTarget.style.transform = 'translateY(0) scale(0.98)';
+      }}
+      onMouseUp={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+      }}
+    >
+      {/* Animated shine effect */}
+      <div 
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+        style={{
+          background: `linear-gradient(45deg, 
+            transparent 30%, 
+            rgba(255, 255, 255, 0.1) 50%, 
+            transparent 70%
+          )`,
+          transform: 'translateX(-100%)',
+          animation: 'shine 2s infinite',
+          borderRadius: 'inherit',
+        }}
+      />
+      
+      {/* Content */}
+      <div className="relative z-10 flex items-center gap-3 transition-all duration-300 group-hover:scale-105">
+        {children}
       </div>
+      
+      <style jsx>{`
+        @keyframes shine {
+          0% { transform: translateX(-100%); }
+          50% { transform: translateX(100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </button>
   );
 };
 
-// IconButton (Original - kept for other uses if needed, or can be removed if ControlButton covers all)
+// IconButton - Modern Acrylic Icon-Only Design
 export const IconButton = ({ type, icon, className = "" }: { type: "save" | "share"; icon: React.ReactNode; className?: string }) => {
-  const getButtonStyles = () => {
-    switch (type) {
-      case "save":
-        return {
-          gradient: "from-blue-600/20 to-purple-600/20",
-          hoverColor: "group-hover:text-blue-400",
-        };
-      case "share":
-        return {
-          gradient: "from-green-600/20 to-teal-600/20",
-          hoverColor: "group-hover:text-green-400",
-        };
-      default:
-        return {
-          gradient: "from-gray-600/20 to-gray-600/20",
-          hoverColor: "group-hover:text-gray-400",
-        };
-    }
+  const getTypeStyles = () => {
+    const styles = {
+      save: {
+        gradient: "linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(147, 51, 234, 0.08) 100%)",
+        hoverGradient: "linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(147, 51, 234, 0.12) 100%)",
+        glowColor: "rgba(59, 130, 246, 0.3)",
+      },
+      share: {
+        gradient: "linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(20, 184, 166, 0.08) 100%)",
+        hoverGradient: "linear-gradient(135deg, rgba(34, 197, 94, 0.18) 0%, rgba(20, 184, 166, 0.12) 100%)",
+        glowColor: "rgba(34, 197, 94, 0.3)",
+      },
+    };
+    return styles[type];
   };
-  const { gradient, hoverColor } = getButtonStyles();
+
+  const typeStyles = getTypeStyles();
+
   return (
     <button
-      className={`cursor-pointer group relative flex items-center gap-2 bg-black/60 backdrop-blur-md text-white px-6 py-3 rounded-lg text-lg font-medium transition-all duration-300 border-t border-white/30 hover:bg-black/30 hover:scale-105 hover:shadow-2xl transform hover:-translate-y-1 active:scale-95 ${className}`}
+      className={`cursor-pointer group relative overflow-hidden ${className}`}
+      style={{
+        width: '56px',
+        height: '56px',
+        background: `
+          ${typeStyles.gradient},
+          linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.05) 0%, 
+            rgba(255, 255, 255, 0.01) 50%, 
+            rgba(0, 0, 0, 0.15) 100%
+          )
+        `,
+        backdropFilter: 'blur(20px) saturate(180%)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '16px',
+        boxShadow: `
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          0 2px 8px ${typeStyles.glowColor},
+          inset 0 1px 0 rgba(255, 255, 255, 0.1),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+        `,
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px) scale(1.05) rotateZ(5deg)';
+        e.currentTarget.style.background = `
+          ${typeStyles.hoverGradient},
+          linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.08) 0%, 
+            rgba(255, 255, 255, 0.02) 50%, 
+            rgba(0, 0, 0, 0.1) 100%
+          )
+        `;
+        e.currentTarget.style.boxShadow = `
+          0 12px 48px rgba(0, 0, 0, 0.5),
+          0 4px 16px ${typeStyles.glowColor},
+          0 0 20px ${typeStyles.glowColor},
+          inset 0 1px 0 rgba(255, 255, 255, 0.15),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.25)
+        `;
+        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0) scale(1) rotateZ(0deg)';
+        e.currentTarget.style.background = `
+          ${typeStyles.gradient},
+          linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.05) 0%, 
+            rgba(255, 255, 255, 0.01) 50%, 
+            rgba(0, 0, 0, 0.15) 100%
+          )
+        `;
+        e.currentTarget.style.boxShadow = `
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          0 2px 8px ${typeStyles.glowColor},
+          inset 0 1px 0 rgba(255, 255, 255, 0.1),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+        `;
+        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+      }}
+      onMouseDown={(e) => {
+        e.currentTarget.style.transform = 'translateY(0) scale(0.95) rotateZ(0deg)';
+      }}
+      onMouseUp={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px) scale(1.05) rotateZ(5deg)';
+      }}
     >
-      <div className={`absolute inset-0 bg-gradient-to-r ${gradient} rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
-      <div className={`transition-all duration-200 group-hover:scale-110 group-hover:rotate-12 relative z-10 ${hoverColor}`}>{icon}</div>
+      {/* Animated pulse effect */}
+      <div 
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"
+        style={{
+          background: `radial-gradient(circle at center, 
+            ${typeStyles.glowColor} 0%, 
+            transparent 70%
+          )`,
+          animation: 'pulse 2s infinite',
+          borderRadius: 'inherit',
+        }}
+      />
+      
+      {/* Icon with enhanced styling */}
+      <div 
+        className="relative z-10 transition-all duration-300 group-hover:scale-110 group-hover:rotate-12" 
+        style={{
+          color: 'white',
+          filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))',
+        }}
+      >
+        {icon}
+      </div>
+      
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 0; transform: scale(1); }
+          50% { opacity: 0.3; transform: scale(1.1); }
+        }
+      `}</style>
     </button>
   );
 };

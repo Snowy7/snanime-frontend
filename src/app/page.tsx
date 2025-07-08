@@ -8,8 +8,8 @@ import { useLanguage } from "@/context/LanguageContext";
 
 export default function Home() {
   const { isLoading, getTopAnimes, getLatestEpisodes } = useAnime();
-  const [tops, setTops] = useState<Anime[]>([]);
-  const [latest, setLatest] = useState<LatestEpisode[]>([]);
+  const [tops, setTops] = useState<SnAnimePaginatedResult<SnAnimeSpotlight>>({} as SnAnimePaginatedResult<SnAnimeSpotlight>);
+  const [latest, setLatest] = useState<SnAnimePaginatedResult<SnAnimeRecentlyUpdated>>({} as SnAnimePaginatedResult<SnAnimeRecentlyUpdated>);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const { t } = useLanguage();
 
@@ -43,11 +43,11 @@ export default function Home() {
 
   return (
     <main className="h-full w-full text-white">
-      <HeroHeader tops={tops} />
+      <HeroHeader tops={tops?.results} />
 
       <LatestEpisodes
         title={t("recent_episodes")}
-        shows={latest}
+        shows={latest?.results}
         onViewAllClick={() => {}}
         className="max-w-screen-2xl mx-auto" // Optional: constrain width
       />

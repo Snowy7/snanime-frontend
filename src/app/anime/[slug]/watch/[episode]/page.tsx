@@ -12,7 +12,7 @@ interface WatchPageProps {
 
 const WatchPage: React.FC<WatchPageProps> = ({ params }) => {
   const resolvedParams = React.use(params);
-  const [episodeDetails, setEpisodeDetails] = useState<EpisodeDetails | null>(null);
+  const [episodeDetails, setEpisodeDetails] = useState<SnEpisodeDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { getAnimeEpisode } = useAnime();
