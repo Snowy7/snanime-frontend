@@ -1,3 +1,5 @@
+
+import { Metadata } from 'next';
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -9,6 +11,11 @@ import NewsCard from '@/components/cards/NewsCard';
 import NewsDetail from '@/components/NewsDetail';
 import NewsFilters from '@/components/NewsFilters';
 import Loading from '@/components/Loading';
+
+export const metadata: Metadata = {
+  title: 'Anime News',
+  description: 'Stay up-to-date with the latest news in the anime world. Get updates on new releases, popular series, and industry events.',
+};
 
 const NewsPage: React.FC = () => {
   const { t, getDirection } = useLanguage();

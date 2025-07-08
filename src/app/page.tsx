@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 "use client";
 import LatestEpisodes from "@/components/LatestEpisodes";
 import HeroHeader from "@/components/HeroHeader";
@@ -5,6 +6,11 @@ import { useAnime } from "@/context/AnimeContext";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
+
+export const metadata: Metadata = {
+  title: "Home",
+  description: "SnAnime - Your ultimate destination for streaming high-quality anime. Discover new series, watch the latest episodes, and immerse yourself in the world of anime.",
+};
 
 export default function Home() {
   const { isLoading, getTopAnimes, getLatestEpisodes } = useAnime();

@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 "use client";
 import React, { useState, useEffect } from "react";
 import AnimeDetails from "@/components/anime/AnimeDetails";
@@ -8,6 +9,49 @@ import RelatedCharacters from "@/components/anime/RelatedCharacters";
 import RelatedStaff from "@/components/anime/RelatedStaff";
 import Loading from "@/components/Loading";
 import RecommendedAnime from "@/components/anime/RecommendedAnime";
+
+import { SnAnimeService } from "@/services/snanime";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const snanime = SnAnimeService.getInstance();
+  const anime = await snanime.getAnimeInfo(params.slug);
+
+  if (!anime) {
+    return {
+      title: "Anime Not Found",
+      description: "This anime could not be found.",
+    };
+  }
+
+  const title = anime.title;
+  const description = anime.description || `Watch ${anime.title} on SnAnime.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [
+        {
+          url: anime.image,
+          width: 300,
+          height: 400,
+          alt: anime.title,
+        },
+      ],
+    },
+    twitter: {
+      title,
+      description,
+      images: [anime.image],
+    },
+  };
+}
 
 interface AnimePageProps {
   params: Promise<{

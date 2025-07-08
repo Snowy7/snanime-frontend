@@ -1,7 +1,51 @@
+import { Metadata } from "next";
 "use client";
 import React, { useState, useEffect } from "react";
 import EpisodePlayer from "@/components/anime/EpisodePlayer";
 import { useAnime } from "@/context/AnimeContext";
+import { SnAnimeService } from "@/services/snanime";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string; episode: string };
+}): Promise<Metadata> {
+  const snanime = SnAnimeService.getInstance();
+  const anime = await snanime.getAnimeInfo(params.slug);
+  const episodeNumber = params.episode;
+
+  if (!anime) {
+    return {
+      title: "Episode Not Found",
+      description: "This episode could not be found.",
+    };
+  }
+
+  const title = `Watch ${anime.title} Episode ${episodeNumber}`;
+  const description = `Stream episode ${episodeNumber} of ${anime.title} in high quality on SnAnime.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [
+        {
+          url: anime.image,
+          width: 300,
+          height: 400,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      title,
+      description,
+      images: [anime.image],
+    },
+  };
+}
 
 interface WatchPageProps {
   params: Promise<{
