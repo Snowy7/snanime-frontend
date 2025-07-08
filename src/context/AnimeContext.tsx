@@ -3,7 +3,6 @@ import Loading from "@/components/Loading";
 import React, { createContext, useContext, ReactNode, useEffect } from "react";
 import { AniListService } from "@/services/anilist";
 import { SnAnimeService } from "@/services/snanime";
-import { SpotlightAnime } from "../../../test/aniwatch/src/hianime/types/anime";
 
 interface AnimeContextType {
   isLoading: boolean;
@@ -235,7 +234,7 @@ export const AnimeProvider: React.FC<AnimeProviderProps> = ({ children }) => {
       }
 
       const response = await snanime.getAnimeEpisode(id, numericEpisodeNumber, "en");
-      if (!response || !response.streams || response.streams.length === 0) {
+      if (!response || !response.streams || response.streams.sources.length === 0) {
         console.warn("No streams found for episode:", id, "Episode Number:", episodeNumber);
         return null;
       }
