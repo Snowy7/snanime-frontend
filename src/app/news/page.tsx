@@ -1,6 +1,6 @@
 
 import { Metadata } from 'next';
-import NewsPageClient from '../components/pages/NewsPageClient';
+import NewsPageClient from '@/components/pages/NewsPageClient';
 
 export const metadata: Metadata = {
   title: 'Anime News',
