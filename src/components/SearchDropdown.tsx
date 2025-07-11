@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Clock, TrendingUp, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { SnAnimeService } from "@/services/snanime";
+import { SnAnimeService } from "@/services/snanime.old";
 import { useLanguage } from "@/context/LanguageContext";
 
 interface SearchDropdownProps {

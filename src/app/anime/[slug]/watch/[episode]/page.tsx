@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { SnAnimeService } from "@/services/snanime";
+import { SnAnimeService } from "@/services/snanime.old";
 import WatchPageClient from "../../../../../components/pages/WatchPageClient";
 
 export async function generateMetadata({

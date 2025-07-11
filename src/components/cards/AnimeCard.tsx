@@ -1,24 +1,35 @@
 import React from "react";
-import Image from "next/image";
-import Link from "next/link"; // Optional: if you want cards to link somewhere
+import BaseCard from "@/components/ui/BaseCard";
 
 interface AnimeCardProps {
   show: SnAnimeData | SnAnimeRelated | SnAnimeRecommendations;
 }
 
 const AnimeCard: React.FC<AnimeCardProps> = ({ show }) => {
+  const extraInfo = [];
+  if ('totalEpisodes' in show) {
+    extraInfo.push({ label: "Episodes", value: show.totalEpisodes || "?" });
+  }
+  if ('duration' in show) {
+    extraInfo.push({ label: "Duration", value: show.duration || "?" });
+  }
+
+  const rating = 'rating' in show && typeof show.rating === 'number' ? show.rating : undefined;
+
   return (
-    <Link href={`/anime/${show.id}`} className="group block overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 ">
-      <div className="relative w-full aspect-[2/3] overflow-hidden">
-        {" "}
-        {/* Aspect ratio for typical poster */}
-        <Image src={show.image} alt={show.title} fill style={{ objectFit: "cover" }} className="transition-transform duration-300 group-hover:scale-115 group-hover:-rotate-6" />
-      </div>
-      <div className="p-3 md:p-4">
-        <h3 className="text-sm md:text-base font-semibold text-white truncate group-hover:text-green-400 transition-colors">{show.title}</h3>
-        <p className="text-xs md:text-sm text-neutral-400 mt-1">{show.type}</p>
-      </div>
-    </Link>
+    <BaseCard
+      href={`/anime/${show.id}`}
+      imageUrl={show.image}
+      title={show.title}
+      badges={[{ text: show.type }]}
+      rating={rating}
+      year={'year' in show ? show.year : undefined}
+      status={'status' in show ? show.status : undefined}
+      tags={'genres' in show ? show.genres : undefined}
+      extraInfo={extraInfo}
+      description={'description' in show ? show.description : undefined}
+      hoverEffect="scale"
+    />
   );
 };
 

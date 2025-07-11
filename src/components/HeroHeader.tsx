@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { ControlButton, IconButton, NavigationButton } from "./ui/button"; // Assuming these are your custom components
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
+import { IAnime, IAnimeSearchResult, IPaginatedResult } from "@/types/anime";
 
 // Indicator Dots Component
 const IndicatorDots = ({ items, currentIndex, onDotClick }: { items: any[]; currentIndex: number; onDotClick: (index: number) => void }) => {
@@ -21,13 +22,13 @@ const IndicatorDots = ({ items, currentIndex, onDotClick }: { items: any[]; curr
   );
 };
 
-const AnimeHeroHeader = ({ tops }: { tops: SnAnimeSpotlight[] }) => {
+const AnimeHeroHeader = ({ tops }: { tops: IPaginatedResult<IAnime> }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const { t } = useLanguage();
 
   // Handle empty tops array
-  if (!tops || tops.length === 0) {
+  if (!tops || tops.items.length === 0) {
     return (
       <div className="relative w-full h-screen overflow-hidden bg-black flex items-center justify-center">
         {/* Background Pattern */}
@@ -52,14 +53,14 @@ const AnimeHeroHeader = ({ tops }: { tops: SnAnimeSpotlight[] }) => {
     );
   }
 
-  const currentAnime = tops[currentIndex];
+  const currentAnime = tops.items[currentIndex];
 
   const paginate = (newDirection: number) => {
     setDirection(newDirection);
     setCurrentIndex((prevIndex) => {
       const newIndex = prevIndex + newDirection;
-      if (newIndex < 0) return tops.length - 1;
-      if (newIndex >= tops.length) return 0;
+      if (newIndex < 0) return tops.items.length - 1;
+      if (newIndex >= tops.items.length) return 0;
       return newIndex;
     });
   };
@@ -147,7 +148,7 @@ const AnimeHeroHeader = ({ tops }: { tops: SnAnimeSpotlight[] }) => {
         >
           {/* SLIDING Background Image */}
           <img
-            src={currentAnime.banner}
+            src={currentAnime.coverImage}
             alt={currentAnime.title}
             className="w-full h-full object-cover object-center absolute inset-0"
           />
@@ -266,8 +267,8 @@ const AnimeHeroHeader = ({ tops }: { tops: SnAnimeSpotlight[] }) => {
               {/* Metadata */}
               <motion.div className="flex flex-wrap items-center gap-4 text-white/80" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.6 }}>
                 {currentAnime.type && <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium">{t(currentAnime.type)}</span>}
-                {currentAnime.duration && <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium">{t(currentAnime.duration)}</span>}
-                {currentAnime.releaseDate && <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium">{currentAnime.releaseDate}</span>}
+                {currentAnime.format && <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium">{t(currentAnime.format)}</span>}
+                {currentAnime.season && <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium">{currentAnime.season}</span>}
               </motion.div>
 
               {/* Tags/Genres */}
@@ -338,7 +339,7 @@ const AnimeHeroHeader = ({ tops }: { tops: SnAnimeSpotlight[] }) => {
 
       {/* Indicator Dots - centered at bottom of entire screen */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 pointer-events-auto z-20">
-        <IndicatorDots items={tops} currentIndex={currentIndex} onDotClick={goToSlide} />
+        <IndicatorDots items={tops.items} currentIndex={currentIndex} onDotClick={goToSlide} />
       </div>
 
       {/* FIXED Navigation Buttons - ensure they are on top */}

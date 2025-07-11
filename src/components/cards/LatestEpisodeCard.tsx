@@ -1,53 +1,73 @@
 import React from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
+import { IAnimeSearchResult } from "@/types/anime";
+import BaseCard from "../ui/BaseCard";
 
 type LatestEpisodeCardProps = {
-  episode: SnAnimeRecentlyUpdated;
+  episode: IAnimeSearchResult;
+  episodeNumber?: number;
+  viewMode?: "grid" | "list";
 };
 
-const LatestEpisodeCard: React.FC<LatestEpisodeCardProps> = ({ episode }) => {
+const LatestEpisodeCard: React.FC<LatestEpisodeCardProps> = ({ 
+  episode, 
+  episodeNumber,
+  viewMode = "grid" 
+}) => {
   const { t } = useLanguage();
 
-  return (
-    <Link href={`/anime/${episode.id}`} className="group block overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 ">
-      <div className="relative w-full aspect-[2/3] overflow-hidden">
-        {" "}
-        {/* Aspect ratio for typical poster */}
-        <Image src={episode.image} alt={episode.title} fill style={{ objectFit: "cover" }} className="transition-transform duration-300 group-hover:scale-115 group-hover:-rotate-6" />
-        {/* overlay on hover showing extra info */}
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-3">
-          <div className="flex flex-wrap gap-2">
-            {/* badge like dev for each item */}
-            {episode.sub && episode.sub > 0 ? <span className={`bg-green-500/20 border border-green-700 backdrop-blur-sm text-white text-xs font-semibold px-2 py-1 rounded-full`}>Sub {episode.sub}</span> : null}
-            {episode.dub && episode.dub > 0 ? <span className={`bg-green-500/20 border border-green-700 backdrop-blur-sm text-white text-xs font-semibold px-2 py-1 rounded-full`}>Dub {episode.dub}</span> : null}
-            {episode.duration && <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-blue-500/20 border border-blue-500 backdrop-blur-sm text-white">{episode.duration}</span>}
-            {episode.type && <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-700 backdrop-blur-sm text-white">{t(episode.type)}</span>}
-          </div>
-        </div>
-      </div>
-      <div className="p-3 md:p-4">
-        <h3 className="text-sm md:text-base font-semibold text-white truncate group-hover:text-green-400 transition-colors">{episode.title}</h3>
-        <p className="text-xs md:text-sm text-neutral-400 mt-1">{t("episode")} {episode.sub}</p>
-      </div>
-    </Link>
-  );
-};
-
-const getColorFromRating = (rating: string): string => {
-  switch (rating) {
-    case "R":
-      return "bg-red-500/20 border border-red-700 backdrop-blur-sm";
-    case "PG":
-      return "bg-yellow-500/20 border border-yellow-700 backdrop-blur-sm";
-    case "PG-13":
-      return "bg-orange-500/20 border border-orange-700 backdrop-blur-sm";
-    case "G":
-      return "bg-green-500/20 border border-green-700 backdrop-blur-sm";
-    default:
-      return "bg-gray-500/20 border border-gray-700 backdrop-blur-sm";
+  const extraInfo = [];
+  
+  // Add episode number if available
+  if (episodeNumber) {
+    extraInfo.push({ 
+      label: t("episode"), 
+      value: episodeNumber.toString() 
+    });
   }
+
+  // Add format info
+  if (episode.format) {
+    extraInfo.push({ 
+      label: "Format", 
+      value: t(episode.format)
+    });
+  }
+
+  // Add main studio
+  const mainStudio = episode.studios?.find(studio => studio.isMain);
+  if (mainStudio) {
+    extraInfo.push({ 
+      label: "Studio", 
+      value: mainStudio.name 
+    });
+  }
+
+  return (
+    <BaseCard
+      href={`/anime/${episode.id}`}
+      imageUrl={episode.coverImage}
+      title={episode.title}
+      badges={[
+        ...(episode.status ? [{ 
+          text: t(episode.status), 
+          color: "bg-green-600/20 text-green-300" 
+        }] : []),
+        ...(episodeNumber ? [{ 
+          text: `${t("episode")} ${episodeNumber}`, 
+          color: "bg-blue-600/20 text-blue-300" 
+        }] : [])
+      ]}
+      rating={episode.rating}
+      description={episode.description}
+      tags={episode.genres}
+      extraInfo={extraInfo}
+      hoverEffect="scale"
+      viewMode={viewMode}
+      size={viewMode === "list" ? "sm" : "md"}
+      className="h-full"
+    />
+  );
 };
 
 export default LatestEpisodeCard;

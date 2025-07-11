@@ -235,16 +235,21 @@ class AniListService {
   }
 
   private mapAniListToAnime(media: AniListMedia): AnilistAnime {
-    const title = media.title.english || media.title.romaji || media.title.userPreferred || "Unknown Title";
+    const title =
+      media.title.english || media.title.romaji || media.title.userPreferred || "Unknown Title";
     const year = media.startDate?.year || media.seasonYear || 0;
     const rating = (media.averageScore || media.meanScore || 0) / 10; // Convert from 0-100 to 0-10 scale
-    const studio = media.studios.edges.find((edge) => edge.isMain)?.node.name || media.studios.edges[0]?.node.name || undefined;
+    const studio =
+      media.studios.edges.find((edge) => edge.isMain)?.node.name ||
+      media.studios.edges[0]?.node.name ||
+      undefined;
 
     return {
       id: media.id.toString(),
       title,
       description: media.description?.replace(/<[^>]*>/g, "") || "", // Remove HTML tags
-      posterUrl: media.coverImage.extraLarge || media.coverImage.large || media.coverImage.medium || "",
+      posterUrl:
+        media.coverImage.extraLarge || media.coverImage.large || media.coverImage.medium || "",
       bannerUrl: media.bannerImage || media.coverImage.extraLarge || "",
       rating,
       year,
@@ -258,10 +263,18 @@ class AniListService {
       related:
         media.relations?.edges.map((edge) => ({
           id: edge.node.id.toString(),
-          title: edge.node.title.english || edge.node.title.romaji || edge.node.title.userPreferred || "Unknown Title",
+          title:
+            edge.node.title.english ||
+            edge.node.title.romaji ||
+            edge.node.title.userPreferred ||
+            "Unknown Title",
           type: this.mapType(edge.node.type),
           status: this.mapStatus(edge.node.status),
-          posterUrl: edge.node.coverImage.extraLarge || edge.node.coverImage.large || edge.node.coverImage.medium || "",
+          posterUrl:
+            edge.node.coverImage.extraLarge ||
+            edge.node.coverImage.large ||
+            edge.node.coverImage.medium ||
+            "",
           year: edge.node.seasonYear || 0,
         })) || [],
       characters:
@@ -801,22 +814,91 @@ class AniListService {
     return response.data.Page.media.map((media) => this.mapAniListToAnime(media));
   }
 
-  public async searchAnime(searchTerm: string, page: number = 1, perPage: number = 10): Promise<AnilistAnime[]> {
+  public async searchAnime(
+    searchTerm: string,
+    page: number = 1,
+    perPage: number = 10,
+    sort: string = "POPULARITY_DESC",
+    sortOrder: string = "DESC"
+  ): Promise<AnilistAnime[]> {
     if (!searchTerm.trim()) {
       throw new Error("Search term cannot be empty");
     }
 
     const query = `
-      query SearchAnime($search: String, $page: Int, $perPage: Int) {
-        Page(page: $page, perPage: $perPage) {
+query (
+        $page: Int = 1
+        $id: Int
+        $type: MediaType
+        $isAdult: Boolean = false
+        $search: String
+        $format: [MediaFormat]
+        $status: MediaStatus
+        $countryOfOrigin: CountryCode
+        $source: MediaSource
+        $season: MediaSeason
+        $seasonYear: Int
+        $year: String
+        $onList: Boolean
+        $yearLesser: FuzzyDateInt
+        $yearGreater: FuzzyDateInt
+        $episodeLesser: Int
+        $episodeGreater: Int
+        $durationLesser: Int
+        $durationGreater: Int
+        $chapterLesser: Int
+        $chapterGreater: Int
+        $volumeLesser: Int
+        $volumeGreater: Int
+        $licensedBy: [Int]
+        $isLicensed: Boolean
+        $genres: [String]
+        $excludedGenres: [String]
+        $tags: [String]
+        $excludedTags: [String]
+        $minimumTagRank: Int
+        $sort: [MediaSort] = [POPULARITY_DESC, SCORE_DESC]
+      ) {
+        Page(page: $page, perPage: 20) {
           pageInfo {
             total
+            perPage
             currentPage
             lastPage
             hasNextPage
-            perPage
           }
-          media(type: ANIME, search: $search, sort: [SEARCH_MATCH, POPULARITY_DESC]) {
+          media(
+            id: $id
+            type: $type
+            season: $season
+            format_in: $format
+            status: $status
+            countryOfOrigin: $countryOfOrigin
+            source: $source
+            search: $search
+            onList: $onList
+            seasonYear: $seasonYear
+            startDate_like: $year
+            startDate_lesser: $yearLesser
+            startDate_greater: $yearGreater
+            episodes_lesser: $episodeLesser
+            episodes_greater: $episodeGreater
+            duration_lesser: $durationLesser
+            duration_greater: $durationGreater
+            chapters_lesser: $chapterLesser
+            chapters_greater: $chapterGreater
+            volumes_lesser: $volumeLesser
+            volumes_greater: $volumeGreater
+            licensedById_in: $licensedBy
+            isLicensed: $isLicensed
+            genre_in: $genres
+            genre_not_in: $excludedGenres
+            tag_in: $tags
+            tag_not_in: $excludedTags
+            minimumTagRank: $minimumTagRank
+            sort: $sort
+            isAdult: $isAdult
+          ) {
             id
             idMal
             title {
@@ -871,11 +953,18 @@ class AniListService {
       search: searchTerm,
       page,
       perPage,
+      sort,
+      sortOrder,
     });
     return response.data.Page.media.map((media) => this.mapAniListToAnime(media));
   }
 
-  public async getSeasonalAnime(season: string, year: number, page: number = 1, perPage: number = 10): Promise<AnilistAnime[]> {
+  public async getSeasonalAnime(
+    season: string,
+    year: number,
+    page: number = 1,
+    perPage: number = 10
+  ): Promise<AnilistAnime[]> {
     const seasonEnum = season.toUpperCase();
 
     const query = `
@@ -948,7 +1037,11 @@ class AniListService {
     return response.data.Page.media.map((media) => this.mapAniListToAnime(media));
   }
 
-  public async getAnimeByGenre(genre: string, page: number = 1, perPage: number = 10): Promise<AnilistAnime[]> {
+  public async getAnimeByGenre(
+    genre: string,
+    page: number = 1,
+    perPage: number = 10
+  ): Promise<AnilistAnime[]> {
     const query = `
       query GetAnimeByGenre($genre: String, $page: Int, $perPage: Int) {
         Page(page: $page, perPage: $perPage) {

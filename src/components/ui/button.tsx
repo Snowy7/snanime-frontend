@@ -3,6 +3,43 @@
 import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "default" | "outline" | "ghost";
+  size?: "sm" | "md" | "lg";
+  children: React.ReactNode;
+}
+
+export const Button: React.FC<ButtonProps> = ({
+  variant = "default",
+  size = "md",
+  className = "",
+  children,
+  ...props
+}) => {
+  const baseStyles = "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
+  
+  const variantStyles = {
+    default: "bg-neutral-900 hover:bg-neutral-800 text-white",
+    outline: "border border-neutral-800 hover:bg-neutral-900/50 text-neutral-200",
+    ghost: "hover:bg-neutral-900/50 text-neutral-200",
+  };
+
+  const sizeStyles = {
+    sm: "text-sm px-3 py-1.5",
+    md: "text-base px-4 py-2",
+    lg: "text-lg px-6 py-3",
+  };
+
+  return (
+    <button
+      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
 // NavigationButton - Modern Acrylic Design
 export const NavigationButton = ({ direction, onClick, className = "" }: { direction: "left" | "right"; onClick: () => void; className?: string }) => {
   const isLeft = direction === "left";

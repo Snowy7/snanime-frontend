@@ -2,10 +2,11 @@ import React from "react";
 import AnimeCard from "./cards/AnimeCard";
 import SectionTitle from "./SectionTitle";
 import LatestEpisodeCard from "./cards/LatestEpisodeCard";
+import { IAnimeSearchResult } from "@/types/anime";
 
 interface GridSectionProps {
   title: string;
-  shows: SnAnimeRecentlyUpdated[];
+  shows: IAnimeSearchResult[];
   onViewAllClick?: () => void;
   className?: string;
 }
