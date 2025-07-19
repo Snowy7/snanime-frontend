@@ -4,14 +4,52 @@ import Image from "next/image";
 import { Play, Bookmark, Share2, Star, Calendar, Clock, Tv, Users, Globe } from "lucide-react";
 import { ControlButton } from "@/components/ui/button";
 import { useLanguage } from "@/context/LanguageContext";
+import { IAnime } from "@/types/anime";
 
 interface AnimeDetailsProps {
-  anime: SnAnimeData;
+  anime: IAnime;
 }
 
 const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const { t } = useLanguage();
+
+  // Format text to capitalize first letter of each word and remove unnecessary punctuation
+  const formatText = (text: string) => {
+    return text
+      .split(",")
+      .map((word) =>
+        word
+          .trim()
+          .split(".")
+          .map((part) => part.trim())
+          .filter((part) => part.length > 0)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+          .join(" ")
+      )
+      .join(", ");
+  };
+
+  // Format description by converting HTML tags to JSX
+  const formatDescription = (description: string) => {
+    return description.split(/<br\s*\/?>/i).map((text, index) => (
+      <React.Fragment key={index}>
+        {text.split(/(<i>.*?<\/i>)/).map((part, idx) => {
+          if (part.startsWith("<i>") && part.endsWith("</i>")) {
+            // Extract text between <i> tags and render in italics
+            const italicText = part.replace(/<\/?i>/g, "");
+            return (
+              <i key={idx} className="text-neutral-200">
+                {italicText}
+              </i>
+            );
+          }
+          return <span key={idx}>{part}</span>;
+        })}
+        {index < description.split(/<br\s*\/?>/i).length - 1 && <br />}
+      </React.Fragment>
+    ));
+  };
 
   const handleWatchNow = () => {
     // TODO: Navigate to episode 1 or continue watching
@@ -38,12 +76,26 @@ const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
     }
   };
 
+  const getSubDubText = (subOrDub: string) => {
+    if (subOrDub === "both") return t("both");
+    if (subOrDub === "sub") return t("sub");
+    if (subOrDub === "dub") return t("dub");
+    return subOrDub.charAt(0).toUpperCase() + subOrDub.slice(1);
+  };
+
   return (
     <>
       {/* Banner Background */}
-      {anime.banner && (
+      {anime.bannerImage && (
         <div className="fixed inset-0 h-full overflow-hidden">
-          <Image src={anime.banner} alt={anime.title} fill style={{ objectFit: "cover" }} priority className="transition-transform duration-700 blur-sm grayscale-75" />
+          <Image
+            src={anime.bannerImage}
+            alt={anime.title}
+            fill
+            style={{ objectFit: "cover" }}
+            priority
+            className="transition-transform duration-700 blur-sm grayscale-75"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/75 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/40" />
 
@@ -58,7 +110,14 @@ const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
           {/* Poster */}
           <div className="flex-shrink-0 animate-fade-in">
             <div className="relative w-64 h-96 md:w-72 md:h-[432px] overflow-hidden rounded-lg shadow-2xl group">
-              <Image src={anime.image} alt={anime.title} fill style={{ objectFit: "cover" }} priority className="transition-transform duration-300 group-hover:scale-105" />
+              <Image
+                src={anime.posterUrl}
+                alt={anime.title}
+                fill
+                style={{ objectFit: "cover" }}
+                priority
+                className="transition-transform duration-300 group-hover:scale-105"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
           </div>
@@ -66,13 +125,17 @@ const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
           {/* Info */}
           <div className="flex-1 space-y-6">
             {/* Title */}
-            <div className="animate-slide-up">
-              <h1 className="text-4xl md:text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight">{anime.title}</h1>
+            <div className="animate-fade-in">
+              <h1 className="text-4xl md:text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight">
+                {anime.title}
+              </h1>
               <div className="flex flex-wrap items-center gap-4 text-neutral-300">
                 <div className="flex items-center gap-1">
-                  <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                  {anime.rating ? (
-                    <span className="text-yellow-400 font-semibold text-lg">{parseFloat(anime.rating?.toString()).toFixed(1)}</span>
+                  <Star className="w-5 h-5 text-yellow-400 fill-current animate-pulse" />
+                  {anime.score ? (
+                    <span className="text-yellow-400 font-semibold text-lg">
+                      {parseFloat(anime.score?.toString()).toFixed(1)}
+                    </span>
                   ) : (
                     <span className="text-neutral-400">N/A</span>
                   )}
@@ -80,27 +143,33 @@ const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  <span>{anime.season}</span>
+                  <span>{anime.season ? t(anime.season) : "N/A"}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Tv className="w-4 h-4" />
                   <span>{t(anime.type)}</span>
                 </div>
-                {anime.episodes.length && (
+                {anime.totalEpisodes && Number(anime.totalEpisodes) > 0 ? (
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
                     <span>
-                      {t("episodes")} {anime.episodes.length}
+                      {t("episodes")} {Number(anime.totalEpisodes)}
                     </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    <span>{t("episodes")} N/A</span>
                   </div>
                 )}
                 <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${anime.status === "Completed"
-                    ? "bg-green-600/20 text-green-400 border border-green-400/30"
-                    : anime.status === "Ongoing"
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    anime.status === "Completed"
+                      ? "bg-green-600/20 text-green-400 border border-green-400/30"
+                      : anime.status === "Ongoing"
                       ? "bg-blue-600/20 text-blue-400 border border-blue-400/30"
                       : "bg-yellow-600/20 text-yellow-400 border border-yellow-400/30"
-                    }`}
+                  }`}
                 >
                   {t(anime.status)}
                 </span>
@@ -108,16 +177,38 @@ const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
             </div>
 
             {/* Additional Info */}
-            {(anime.studio || anime.source) && (
-              <div className="animate-fade-in-delayed flex flex-wrap gap-4 text-sm text-neutral-400">
-                {anime.studio && (
-                  <div>
-                    <span className="font-medium text-neutral-300">Studio:</span> {anime.studio}
+            {(anime.studios || anime.producers) && (
+              <div className="animate-fade-in-delayed flex flex-col gap-3 text-sm text-neutral-400">
+                {anime.studios && (
+                  <div className="flex gap-2 items-center">
+                    <span className="font-medium text-neutral-300 min-w-fit">{t("studios")}:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {anime.studios.map((studio, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-white/5 rounded-full border border-white/10"
+                        >
+                          {formatText(studio)}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {anime.source && (
-                  <div>
-                    <span className="font-medium text-neutral-300">Source:</span> {anime.source}
+                {anime.producers && (
+                  <div className="flex gap-2 items-center">
+                    <span className="font-medium text-neutral-300 min-w-fit">
+                      {t("producers")}:
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {anime.producers.map((producer, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-white/5 rounded-full border border-white/10"
+                        >
+                          {formatText(producer)}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -126,7 +217,7 @@ const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
             {/* Genres */}
             <div className="animate-fade-in-delayed">
               <div className="flex flex-wrap gap-2">
-                {anime.genres.map((genre, index) => (
+                {anime.genres?.map((genre, index) => (
                   <span
                     key={index}
                     className="px-3 py-1 bg-white/10 backdrop-blur-sm text-white text-sm rounded-full border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all duration-300 cursor-pointer transform hover:scale-105"
@@ -140,10 +231,19 @@ const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
             {/* Description */}
             <div className="animate-fade-in-delayed">
               <div className="relative">
-                <p className={`text-neutral-300 text-md leading-relaxed max-w-4xl transition-all duration-300 ${isExpanded ? "" : "line-clamp-3 overflow-hidden"}`}>{anime.description}</p>
+                <div
+                  className={`text-neutral-300 text-md leading-relaxed max-w-4xl transition-all duration-300 ${
+                    isExpanded ? "" : "line-clamp-3 overflow-hidden"
+                  }`}
+                >
+                  {formatDescription(anime.description || "")}
+                </div>
                 {anime.description && anime.description.length > 200 && (
-                  <button onClick={() => setIsExpanded(!isExpanded)} className="text-blue-400 hover:text-blue-300 mt-2 text-sm font-medium transition-colors duration-200 cursor-pointer">
-                    {isExpanded ? "Show Less" : "Read More"}
+                  <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="text-blue-400 hover:text-blue-300 mt-2 text-sm font-medium transition-colors duration-200 cursor-pointer"
+                  >
+                    {isExpanded ? t("show_less") : t("read_more")}
                   </button>
                 )}
               </div>
@@ -153,11 +253,10 @@ const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
             <div className="animate-fade-in-delayed">
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4 text-neutral-400" />
-                <span className="text-neutral-400">Available in:</span>
-                <span className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-sm border border-blue-400/30">{anime.subOrDub == "both" ? "Sub | Dub" :
-                  // first letter of subOrDub is capitalized
-                  anime.subOrDub.charAt(0).toUpperCase() + anime.subOrDub.slice(1)
-                }</span>
+                <span className="text-neutral-400">{t("available_in")}</span>
+                <span className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-sm border border-blue-400/30">
+                  {getSubDubText(anime.subOrDub)}
+                </span>
               </div>
             </div>
 
@@ -165,17 +264,17 @@ const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
             <div className="flex flex-wrap gap-4 pt-4 animate-fade-in-delayed">
               <ControlButton type="primary" onClick={handleWatchNow} className="min-w-[200px]">
                 <Play className="w-6 h-6" />
-                <span>Watch Now</span>
+                <span>{t("watch_now")}</span>
               </ControlButton>
 
               <ControlButton type="save" onClick={handleSave}>
                 <Bookmark className="w-5 h-5" />
-                <span>Add to List</span>
+                <span>{t("add_to_list")}</span>
               </ControlButton>
 
               <ControlButton type="share" onClick={handleShare}>
                 <Share2 className="w-5 h-5" />
-                <span>Share</span>
+                <span>{t("share")}</span>
               </ControlButton>
             </div>
           </div>

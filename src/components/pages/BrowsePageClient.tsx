@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
-import { useAnime } from "@/context/AnimeContext";
+import { useAnimeSearch } from "@/hooks/anime/useAnimeSearch";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { AnimeFormat, AnimeSeason, AnimeSort, AnimeStatus, IAnimeSearchResult } from "@/types/anime";
 import SearchBar from "@/components/browse/SearchBar";
@@ -50,7 +50,7 @@ export default function BrowsePageClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { t, getDirection } = useLanguage();
-  const { searchAnimes } = useAnime();
+  const { searchAnimes } = useAnimeSearch();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const searchQueryRef = useRef(searchQuery);
   const [searchResults, setSearchResults] = useState<IAnimeSearchResult[]>([]);

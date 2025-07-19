@@ -38,7 +38,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ anime, viewMode = "
 
   return (
     <BaseCard
-      href={`/anime/${anime.id}`}
+      href={`/anime/3:${anime.id}`}
       imageUrl={anime.coverImage}
       title={anime.title}
       badges={[

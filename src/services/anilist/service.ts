@@ -1,9 +1,14 @@
-import { IAnime, IAnimeSearchParams, IAnimeSearchResult, IPaginatedResult } from '@/types/anime';
-import { IAnilistAnimeData, IAnilistResponse, IAnilistSearchResponse, IAnilistSearchVariables } from './types';
+import { IAnime, IAnimeSearchParams, IAnimeSearchResult, IPaginatedResult, AnimeStatus } from "@/types/anime";
+import {
+  IAnilistAnimeData,
+  IAnilistResponse,
+  IAnilistSearchResponse,
+  IAnilistSearchVariables,
+} from "./types";
 
 export class AniListService {
   private static instance: AniListService;
-  private baseUrl = 'https://graphql.anilist.co';
+  private baseUrl = "https://graphql.anilist.co";
 
   private constructor() {}
 
@@ -14,44 +19,73 @@ export class AniListService {
     return AniListService.instance;
   }
 
-  private formatDate(date: { year: number | null; month: number | null; day: number | null }): string {
-    if (!date.year) return '';
-    return `${date.year}-${date.month?.toString().padStart(2, '0') || '01'}-${
-      date.day?.toString().padStart(2, '0') || '01'
+  private formatDate(date: {
+    year: number | null;
+    month: number | null;
+    day: number | null;
+  }): string {
+    if (!date.year) return "";
+    return `${date.year}-${date.month?.toString().padStart(2, "0") || "01"}-${
+      date.day?.toString().padStart(2, "0") || "01"
     }`;
   }
 
-  private mapStatusToGlobal(status: string): IAnime['status'] {
-    const statusMap: { [key: string]: IAnime['status'] } = {
-      FINISHED: 'FINISHED',
-      RELEASING: 'RELEASING',
-      NOT_YET_RELEASED: 'NOT_YET_RELEASED',
-      CANCELLED: 'CANCELLED',
+  private mapStatusToGlobal(status: string): AnimeStatus {
+    const statusMap: { [key: string]: AnimeStatus } = {
+      FINISHED: "FINISHED",
+      RELEASING: "RELEASING",
+      NOT_YET_RELEASED: "NOT_YET_RELEASED",
+      CANCELLED: "CANCELLED",
     };
-    return statusMap[status] || 'NOT_YET_RELEASED';
+    return statusMap[status] || "NOT_YET_RELEASED";
   }
 
-  private mapToGlobalAnime(anilistAnime: IAnilistAnimeData): IAnime {
+  private mapToGlobalAnime(media: IAnilistAnimeData): IAnime {
     return {
-      id: anilistAnime.id.toString(),
-      malId: anilistAnime.idMal,
-      title: anilistAnime.title.english || anilistAnime.title.romaji,
-      description: anilistAnime.description || '',
-      coverImage: anilistAnime.coverImage.extraLarge || anilistAnime.coverImage.large || anilistAnime.coverImage.medium || '',
-      bannerImage: anilistAnime.bannerImage || undefined,
-      genres: anilistAnime.genres,
-      status: this.mapStatusToGlobal(anilistAnime.status),
-      episodes: anilistAnime.episodes || undefined,
-      duration: anilistAnime.duration || undefined,
-      rating: anilistAnime.averageScore ? anilistAnime.averageScore / 10 : undefined,
-      startDate: this.formatDate(anilistAnime.startDate),
-      endDate: this.formatDate(anilistAnime.endDate),
+      id: media.id.toString(),
+      malId: media.idMal || 0,
+      title: media.title?.english || media.title?.romaji || media.title?.native || "",
+      synonyms: media.synonyms || [],
+      description: media.description || "",
+      posterUrl:
+        media.coverImage?.extraLarge || media.coverImage?.large || media.coverImage?.medium || "",
+      bannerImage: media.bannerImage || "",
+      type: media.format || media.type || "UNKNOWN",
+      status: media.status || "UNKNOWN",
+      season: media.season?.toLowerCase() || "",
+      year: media.seasonYear?.toString() || "",
+      totalEpisodes: media.episodes || 0,
+      subOrDub: "sub", // AniList doesn't provide dub info
+      genres: media.genres || [],
+      averageScore: media.averageScore || 0,
+      studios: media.studios?.edges?.map((edge: any) => edge.node.name) || undefined,
+      duration: media.duration || undefined,
+      score: media.meanScore || undefined,
+      relatedAnime:
+        (media as any).relations?.edges?.map((edge: any) => ({
+          id: edge.node.id.toString(),
+          malId: edge.node.idMal || 0,
+          title:
+            edge.node.title?.english || edge.node.title?.romaji || edge.node.title?.native || "",
+          type: edge.node.type || "UNKNOWN",
+          status: edge.node.status || "UNKNOWN",
+          relationType: edge.relationType,
+          posterUrl:
+            edge.node.coverImage?.extraLarge ||
+            edge.node.coverImage?.large ||
+            edge.node.coverImage?.medium,
+          season: edge.node.season?.toLowerCase(),
+          year: edge.node.seasonYear?.toString(),
+          totalEpisodes: edge.node.episodes,
+          genres: edge.node.genres,
+          averageScore: edge.node.averageScore,
+        })) || undefined,
     };
   }
 
   private mapToSearchResult(anilistAnime: IAnilistAnimeData): IAnimeSearchResult {
     return {
-      id: anilistAnime.id.toString(),
+      id: anilistAnime.idMal.toString(),
       title: anilistAnime.title.english || anilistAnime.title.romaji,
       coverImage: anilistAnime.coverImage.large,
       description: anilistAnime.description || undefined,
@@ -62,14 +96,17 @@ export class AniListService {
       format: anilistAnime.format || undefined,
       season: anilistAnime.season || undefined,
       seasonYear: anilistAnime.seasonYear || undefined,
-      studios: anilistAnime.studios.edges.map(edge => ({
+      studios: anilistAnime.studios.edges.map((edge) => ({
         name: edge.node.name,
-        isMain: edge.isMain
-      }))
+        isMain: edge.isMain,
+      })),
     };
   }
 
-  public async getSpotlight(page: number = 1, perPage: number = 20): Promise<IPaginatedResult<IAnime>> {
+  public async getSpotlight(
+    page: number = 1,
+    perPage: number = 20
+  ): Promise<IPaginatedResult<IAnime>> {
     const query = `
       query ($page: Int = 1, $perPage: Int = 20) {
         Page(page: $page, perPage: $perPage) {
@@ -133,36 +170,36 @@ export class AniListService {
 
     try {
       const response = await fetch(this.baseUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
           query,
-          variables: { page, perPage }
+          variables: { page, perPage },
         }),
       });
 
       const data = (await response.json()) as IAnilistSearchResponse;
-      
+
       return {
-        items: data.data.Page.media.map(anime => this.mapToGlobalAnime(anime)),
+        items: data.data.Page.media.map((anime) => this.mapToGlobalAnime(anime)),
         total: data.data.Page.pageInfo.total,
         currentPage: data.data.Page.pageInfo.currentPage,
         totalPages: data.data.Page.pageInfo.lastPage,
         hasNextPage: data.data.Page.pageInfo.hasNextPage,
-        hasPreviousPage: data.data.Page.pageInfo.currentPage > 1
+        hasPreviousPage: data.data.Page.pageInfo.currentPage > 1,
       };
     } catch (error) {
-      console.error('Error fetching spotlight anime from AniList:', error);
+      console.error("Error fetching spotlight anime from AniList:", error);
       return {
         items: [],
         total: 0,
         currentPage: page,
         totalPages: 1,
         hasNextPage: false,
-        hasPreviousPage: false
+        hasPreviousPage: false,
       };
     }
   }
@@ -205,10 +242,10 @@ export class AniListService {
       `;
 
       const response = await fetch(this.baseUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
           query,
@@ -221,7 +258,7 @@ export class AniListService {
 
       return this.mapToGlobalAnime(data.data.Media);
     } catch (error) {
-      console.error('Error fetching anime from AniList:', error);
+      console.error("Error fetching anime from AniList:", error);
       return null;
     }
   }
@@ -279,32 +316,34 @@ export class AniListService {
 
     try {
       const response = await fetch(this.baseUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
           query,
-          variables: { ids: malIds }
+          variables: { ids: malIds },
         }),
       });
 
-      const data = await response.json() as IAnilistSearchResponse;
-      
+      const data = (await response.json()) as IAnilistSearchResponse;
+
       if (data.errors) {
-        console.error('AniList API errors:', data.errors);
-        throw new Error(data.errors[0]?.message || 'Error fetching multiple anime');
+        console.error("AniList API errors:", data.errors);
+        throw new Error(data.errors[0]?.message || "Error fetching multiple anime");
       }
 
-      return data.data.Page.media.map(anime => this.mapToGlobalAnime(anime));
+      return data.data.Page.media.map((anime) => this.mapToGlobalAnime(anime));
     } catch (error) {
-      console.error('Error fetching multiple anime:', error);
+      console.error("Error fetching multiple anime:", error);
       return [];
     }
   }
 
-  public async searchAnime(params: IAnimeSearchParams): Promise<IPaginatedResult<IAnimeSearchResult>> {
+  public async searchAnime(
+    params: IAnimeSearchParams
+  ): Promise<IPaginatedResult<IAnimeSearchResult>> {
     if (!params.query?.trim()) {
       throw new Error("Search query cannot be empty");
     }
@@ -316,7 +355,7 @@ export class AniListService {
       perPage: params.perPage || 20,
       type: "ANIME",
       sort: ["SEARCH_MATCH"],
-      isAdult: false
+      isAdult: false,
     };
 
     // Only add non-empty parameters
@@ -416,44 +455,44 @@ export class AniListService {
 
     try {
       const response = await fetch(this.baseUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
           query,
-          variables
+          variables,
         }),
       });
 
       const data = (await response.json()) as IAnilistSearchResponse;
-      
+
       if (data.errors) {
-        console.error('AniList API errors:', data.errors);
-        throw new Error(data.errors[0]?.message || 'Error searching anime');
+        console.error("AniList API errors:", data.errors);
+        throw new Error(data.errors[0]?.message || "Error searching anime");
       }
 
       const { pageInfo, media } = data.data.Page;
 
       return {
-        items: media.map(item => this.mapToSearchResult(item)),
+        items: media.map((item) => this.mapToSearchResult(item)),
         total: pageInfo.total,
         currentPage: pageInfo.currentPage,
         totalPages: pageInfo.lastPage,
         hasNextPage: pageInfo.hasNextPage,
-        hasPreviousPage: pageInfo.currentPage > 1
+        hasPreviousPage: pageInfo.currentPage > 1,
       };
     } catch (error) {
-      console.error('Error searching anime:', error);
+      console.error("Error searching anime:", error);
       return {
         items: [],
         total: 0,
         currentPage: 1,
         totalPages: 0,
         hasNextPage: false,
-        hasPreviousPage: false
+        hasPreviousPage: false,
       };
     }
   }
-} 
+}

@@ -29,7 +29,7 @@ interface QuickResult {
 }
 
 const SearchDropdown: React.FC<SearchDropdownProps> = ({ isExpanded, onToggle, onClose }) => {
-  const { t, getDirection } = useLanguage();
+  const { t, getDirection, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<QuickResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -71,7 +71,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ isExpanded, onToggle, o
 
     setIsLoading(true);
     try {
-      const response = await snAnimeService.searchAnime(query, "en");
+      const response = await snAnimeService.searchAnime(query, language);
       const quickResults: QuickResult[] = response.results.map((anime) => ({
         id: anime.id,
         title: anime.title,

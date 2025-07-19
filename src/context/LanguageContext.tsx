@@ -1,7 +1,8 @@
 "use client";
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-type Language = "en" | "ar";
+export type Language = "en" | "ar";
 
 interface Translations {
   [key: string]: string | Translations;
@@ -29,8 +30,13 @@ interface LanguageProviderProps {
   children: ReactNode;
 }
 
-// Helper function to get nested translation value
+// Enhanced helper function to get nested translation value with better error handling
 const getTranslation = (translations: Translations, key: string): string | undefined => {
+  if (!key || typeof key !== 'string') {
+    console.warn('Invalid translation key:', key);
+    return undefined;
+  }
+
   const keys = key.split(".");
   let value: any = translations;
 
@@ -45,7 +51,7 @@ const getTranslation = (translations: Translations, key: string): string | undef
   return typeof value === "string" ? value : undefined;
 };
 
-// Function to load translation files
+// Function to load translation files with better error handling
 const loadTranslations = async (language: Language): Promise<Translations> => {
   try {
     // Dynamic import of translation files
@@ -54,10 +60,22 @@ const loadTranslations = async (language: Language): Promise<Translations> => {
 
     return translations.default || translations;
   } catch (error) {
-    console.warn(`Failed to load translations for ${language}:`, error);
+    console.error(`Failed to load translations for ${language}:`, error);
     // Return empty object as fallback
     return {};
   }
+};
+
+// Helper function to interpolate parameters in translation strings
+const interpolateParams = (text: string, params: Record<string, any>): string => {
+  if (!params || Object.keys(params).length === 0) {
+    return text;
+  }
+
+  return Object.entries(params).reduce((acc, [key, value]) => {
+    const placeholder = `{{${key}}}`;
+    return acc.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), String(value));
+  }, text);
 };
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
@@ -67,7 +85,17 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
 
   useEffect(() => {
     const initializeLanguage = async () => {
-      const savedLanguage = localStorage.getItem(STORAGE_KEY) as Language;
+      // Helper function to get cookie value
+      const getCookie = (name: string) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+        return null;
+      };
+
+      // Check cookie first, then localStorage
+      const cookieLanguage = getCookie(STORAGE_KEY) as Language;
+      const savedLanguage = cookieLanguage || localStorage.getItem(STORAGE_KEY) as Language;
       let selectedLanguage: Language = "en";
 
       if (savedLanguage && availableLanguages.some((lang) => lang.code === savedLanguage)) {
@@ -87,21 +115,33 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   const setLanguage = async (newLanguage: Language) => {
     setIsLoading(true);
     setLanguageState(newLanguage);
+    
+    // Set both localStorage and cookie for better compatibility
     localStorage.setItem(STORAGE_KEY, newLanguage);
-
+    document.cookie = `app-language=${newLanguage}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+    
     const newTranslations = await loadTranslations(newLanguage);
     setTranslations(newTranslations);
     setIsLoading(false);
   };
 
-  // Translation function
+  // Enhanced translation function with better error handling and fallback
   const t = (key: string, params?: Record<string, any>): string => {
-    const translation = getTranslation(translations, key);
-    if (!translation) return key;
+    if (!key) {
+      console.warn('Empty translation key provided');
+      return '';
+    }
 
-    return Object.entries(params || {}).reduce((acc, [k, v]) => {
-      return acc.replace(new RegExp(`{{${k}}}`, "g"), String(v));
-    }, translation);
+    const translation = getTranslation(translations, key);
+    
+    if (!translation) {
+      console.warn(`Translation not found for key: ${key}`);
+      // Return the key as fallback, but make it more readable
+      const fallback = key.split('.').pop() || key;
+      return fallback.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+    }
+
+    return interpolateParams(translation, params || {});
   };
 
   // Function to get text direction based on language

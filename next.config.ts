@@ -17,7 +17,9 @@ const nextConfig: NextConfig = {
       "anime4up.rest",
       "cdn.anime-planet.com",
       "raw.githubusercontent.com",
-      "cdn.noitatnemucod.net"
+      "cdn.noitatnemucod.net",
+      "img.anslayer.com",
+      "animeowl.me"
     ]
   }
 };

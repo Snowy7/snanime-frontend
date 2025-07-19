@@ -4,7 +4,8 @@ import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { ControlButton, IconButton, NavigationButton } from "./ui/button"; // Assuming these are your custom components
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
-import { IAnime, IAnimeSearchResult, IPaginatedResult } from "@/types/anime";
+import { IAnime, IAnimeSpotlight } from "@/types/anime";
+import { useRouter } from "next/navigation";
 
 // Indicator Dots Component
 const IndicatorDots = ({ items, currentIndex, onDotClick }: { items: any[]; currentIndex: number; onDotClick: (index: number) => void }) => {
@@ -22,13 +23,15 @@ const IndicatorDots = ({ items, currentIndex, onDotClick }: { items: any[]; curr
   );
 };
 
-const AnimeHeroHeader = ({ tops }: { tops: IPaginatedResult<IAnime> }) => {
+const AnimeHeroHeader = ({ tops }: { tops: IAnimeSpotlight[] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const router = useRouter();
+  const isRTL = language === "ar";
 
   // Handle empty tops array
-  if (!tops || tops.items.length === 0) {
+  if (!tops || tops.length === 0) {
     return (
       <div className="relative w-full h-screen overflow-hidden bg-black flex items-center justify-center">
         {/* Background Pattern */}
@@ -53,14 +56,14 @@ const AnimeHeroHeader = ({ tops }: { tops: IPaginatedResult<IAnime> }) => {
     );
   }
 
-  const currentAnime = tops.items[currentIndex];
+  const currentAnime = tops[currentIndex];
 
   const paginate = (newDirection: number) => {
     setDirection(newDirection);
     setCurrentIndex((prevIndex) => {
       const newIndex = prevIndex + newDirection;
-      if (newIndex < 0) return tops.items.length - 1;
-      if (newIndex >= tops.items.length) return 0;
+      if (newIndex < 0) return tops.length - 1;
+      if (newIndex >= tops.length) return 0;
       return newIndex;
     });
   };
@@ -104,7 +107,7 @@ const AnimeHeroHeader = ({ tops }: { tops: IPaginatedResult<IAnime> }) => {
   };
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-black">
+    <div className={`relative w-full h-screen overflow-hidden bg-black ${isRTL ? "rtl" : ""}`}>
       {/* FIXED Grid Overlay - subtle and appears in darker areas with fade around image */}
       <div
         className="absolute inset-0 pointer-events-none z-[1]" // z-index 1
@@ -144,11 +147,11 @@ const AnimeHeroHeader = ({ tops }: { tops: IPaginatedResult<IAnime> }) => {
             x: { type: "spring", stiffness: 300, damping: 20 },
             opacity: { duration: 0.6, delay: 0.1 },
           }}
-          className="absolute right-24 top-1/2 -translate-y-1/2 w-3/5 h-3/4 overflow-hidden" // Removed rounded corners, added soft shadow
+          className={`absolute ${isRTL ? "left-24" : "right-24"} top-1/2 -translate-y-1/2 w-3/5 h-3/4 overflow-hidden`} // Removed rounded corners, added soft shadow
         >
           {/* SLIDING Background Image */}
           <img
-            src={currentAnime.coverImage}
+            src={currentAnime.posterUrl}
             alt={currentAnime.title}
             className="w-full h-full object-cover object-center absolute inset-0"
           />
@@ -237,7 +240,7 @@ const AnimeHeroHeader = ({ tops }: { tops: IPaginatedResult<IAnime> }) => {
           {/* Content section with title, description, and metadata */}
           <motion.div
             key={currentIndex}
-            className="flex-1 flex items-center justify-start pt-[10%] pl-8 md:pl-16 pointer-events-none"
+            className={`flex-1 flex items-center justify-start pt-[10%] ${isRTL ? "pr-8 md:pr-16" : "pl-8 md:pl-16"} pointer-events-none`}
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
@@ -267,8 +270,8 @@ const AnimeHeroHeader = ({ tops }: { tops: IPaginatedResult<IAnime> }) => {
               {/* Metadata */}
               <motion.div className="flex flex-wrap items-center gap-4 text-white/80" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.6 }}>
                 {currentAnime.type && <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium">{t(currentAnime.type)}</span>}
-                {currentAnime.format && <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium">{t(currentAnime.format)}</span>}
-                {currentAnime.season && <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium">{currentAnime.season}</span>}
+                {currentAnime.duration && <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium">{currentAnime.duration}</span>}
+                {currentAnime.year && <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium">{currentAnime.year}</span>}
               </motion.div>
 
               {/* Tags/Genres */}
@@ -306,7 +309,7 @@ const AnimeHeroHeader = ({ tops }: { tops: IPaginatedResult<IAnime> }) => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 1.0 }}
               >
-                <ControlButton type="primary">
+                <ControlButton type="primary" onClick={() => router.push(`/anime/${currentAnime.id}`)}>
                   <Play className="w-5 h-5 transition-all duration-200 group-hover:scale-110" fill="currentColor" />
                   <span className="hidden md:block">{t("start_watching")}</span>
                 </ControlButton>
@@ -339,7 +342,7 @@ const AnimeHeroHeader = ({ tops }: { tops: IPaginatedResult<IAnime> }) => {
 
       {/* Indicator Dots - centered at bottom of entire screen */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 pointer-events-auto z-20">
-        <IndicatorDots items={tops.items} currentIndex={currentIndex} onDotClick={goToSlide} />
+        <IndicatorDots items={tops} currentIndex={currentIndex} onDotClick={goToSlide} />
       </div>
 
       {/* FIXED Navigation Buttons - ensure they are on top */}

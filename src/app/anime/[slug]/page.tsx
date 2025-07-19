@@ -1,6 +1,8 @@
 import { Metadata } from "next";
-import { SnAnimeService } from "@/services/snanime.old";
-import AnimePageClient from "../../../components/pages/AnimePageClient";
+import { snanimeService } from "@/services/global";
+import AnimePageClient from "@/components/pages/AnimePageClient";
+import { notFound } from "next/navigation";
+import { getServerLanguage } from "@/lib/server-utils";
 
 export async function generateMetadata({
   params,
@@ -8,8 +10,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const resolvedParams = await params;
-  const snanime = SnAnimeService.getInstance();
-  const anime = await snanime.getAnimeInfo(resolvedParams.slug);
+  const language = await getServerLanguage();
+  const anime = await snanimeService.getAnimeInfo(resolvedParams.slug, language);
 
   if (!anime) {
     return {
@@ -18,8 +20,8 @@ export async function generateMetadata({
     };
   }
 
-  const title = anime.title;
-  const description = anime.description || `Watch ${anime.title} on SnAnime.`;
+  const title = `${anime.title} - SnAnime`;
+  const description = anime.description || `Watch ${anime.title} on SnAnime. Stream high-quality anime episodes online.`;
 
   return {
     metadataBase: new URL("https://snanime.snowydev.xyz"),
@@ -30,17 +32,17 @@ export async function generateMetadata({
       description,
       images: [
         {
-          url: anime.image,
+          url: anime.posterUrl,
           width: 300,
           height: 400,
-          alt: anime.title,
+          alt: title,
         },
       ],
     },
     twitter: {
       title,
       description,
-      images: [anime.image],
+      images: [anime.posterUrl],
     },
   };
 }
@@ -51,6 +53,14 @@ interface AnimePageProps {
   }>;
 }
 
-export default function AnimePage({ params }: AnimePageProps) {
-  return <AnimePageClient unresolvedParams={params} />;
+export default async function AnimePage({ params }: AnimePageProps) {
+  const resolvedParams = await params;
+  const language = await getServerLanguage();
+  const anime = await snanimeService.getAnimeInfo(resolvedParams.slug, language);
+
+  if (!anime) {
+    notFound();
+  }
+
+  return <AnimePageClient anime={anime} />;
 }

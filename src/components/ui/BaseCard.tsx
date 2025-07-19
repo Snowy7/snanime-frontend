@@ -18,7 +18,7 @@ export interface BaseCardProps {
   status?: string;
   extraInfo?: {
     label: string;
-    value: string | number;
+    value: string | number | undefined;
   }[];
   description?: string;
   tags?: string[];
@@ -192,7 +192,7 @@ const BaseCard: React.FC<BaseCardProps> = ({
         />
         
         {/* Overlay with hover effect */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         {/* Play/Info button overlay */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">

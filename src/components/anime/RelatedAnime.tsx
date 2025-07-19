@@ -5,6 +5,7 @@ import SectionTitle from "@/components/SectionTitle";
 import { NavigationButton } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { SnAnimeRelated } from "@/types/anime";
 
 interface RelatedAnimeProps {
   relatedAnime: SnAnimeRelated[];

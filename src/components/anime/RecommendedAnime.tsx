@@ -5,13 +5,14 @@ import SectionTitle from "@/components/SectionTitle";
 import { NavigationButton } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { SnAnimeRelated } from "@/types/anime";
 
 interface RecommendedAnimeProps {
   recommendations: SnAnimeRecommendations[];
   className?: string;
 }
 
-const RecommendedAnime: React.FC<RecommendedAnimeProps> = ({ recommendations: relatedAnime, className = "" }) => {
+const RecommendedAnime: React.FC<RecommendedAnimeProps> = ({ recommendations, className = "" }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -20,9 +21,29 @@ const RecommendedAnime: React.FC<RecommendedAnimeProps> = ({ recommendations: re
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { t, getDirection } = useLanguage();
 
-  if (!relatedAnime || relatedAnime.length === 0) {
+  if (!recommendations || recommendations.length === 0) {
     return null;
   }
+
+  // Convert SnAnimeRecommendations to SnAnimeRelated format
+  const convertToRelated = (recommendation: SnAnimeRecommendations): SnAnimeRelated => {
+    return {
+      id: recommendation.id,
+      malId: 0, // Not available in recommendations, use default
+      title: recommendation.title,
+      type: recommendation.type,
+      status: "UNKNOWN", // Not available in recommendations, use default
+      relationType: "RECOMMENDATION", // Set as recommendation type
+      posterUrl: recommendation.image,
+      season: undefined, // Not available in recommendations
+      year: undefined, // Not available in recommendations
+      totalEpisodes: recommendation.episodes,
+      genres: undefined, // Not available in recommendations
+      averageScore: undefined, // Not available in recommendations
+    };
+  };
+
+  const relatedAnime = recommendations.map(convertToRelated);
 
   // Easing function for smooth animation
   const easeOutCubic = (t: number): number => {
@@ -169,7 +190,7 @@ const RecommendedAnime: React.FC<RecommendedAnimeProps> = ({ recommendations: re
       }
       window.removeEventListener('resize', handleResize);
     };
-  }, [relatedAnime, checkScrollPosition, handleResize]);
+  }, [recommendations, checkScrollPosition, handleResize]);
 
   const handleViewAll = () => {
     console.log("View all related anime clicked");

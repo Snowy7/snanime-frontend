@@ -1,20 +1,37 @@
-import { IAnime, IAnimeEpisode, IAnimeEpisodeDetails, IPaginatedResult, IAnimeSearchResult } from '@/types/anime';
 import {
-  ISnAnimeData,
-  ISnAnimeEpisode,
-  ISnAnimeEpisodeDetails,
-  ISnAnimePaginatedResult,
-  ISnAnimeSearchResult,
+  IAnime,
+  IAnimeSearchResult,
+  AnimeStatus,
+  AnimeType,
+  AnimeSeason,
+  IAnimeLatest,
+  IAnimeSpotlight,
+  IPaginatedResult,
+} from "@/types/anime";
+import {
+  ISnAnimeApiResponse,
+  ISnAnimeInfo,
+  ISnAnimeLatest,
+  ISnAnimePaginationQuery,
+  ISnAnimePaginationResult,
   ISnAnimeSpotlight,
-  ISnAnimeRecentlyUpdated,
-} from './types';
+  ISnAnimeHealthCheck,
+  ISnAnimeEpisodeDetails,
+} from "./types";
 
+/**
+ * Service class for interacting with the SnAnime API
+ */
 export class SnAnimeService {
   private static instance: SnAnimeService;
-  private baseUrl = process.env.NEXT_PUBLIC_SNANIME_API_URL || 'https://snanime-api.snowydev.xyz/api/v1/anime';
+  private baseUrl =
+    process.env.NEXT_PUBLIC_SNANIME_API_URL || "https://snanime-api.snowydev.xyz/api/v1";
 
   private constructor() {}
 
+  /**
+   * Get singleton instance of SnAnimeService
+   */
   public static getInstance(): SnAnimeService {
     if (!SnAnimeService.instance) {
       SnAnimeService.instance = new SnAnimeService();
@@ -22,170 +39,201 @@ export class SnAnimeService {
     return SnAnimeService.instance;
   }
 
-  private mapStatusToGlobal(status: string): IAnime['status'] {
-    const statusMap: { [key: string]: IAnime['status'] } = {
-      completed: 'FINISHED',
-      ongoing: 'RELEASING',
-      upcoming: 'NOT_YET_RELEASED',
-      dropped: 'CANCELLED',
-    };
-    return statusMap[status.toLowerCase()] || 'NOT_YET_RELEASED';
+  /**
+   * Add language parameter to URL
+   */
+  private addLanguageToUrl(url: string, language: string): string {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}language=${language}`;
   }
 
-  private mapToGlobalAnime(snAnime: ISnAnimeData): IAnime {
-    return {
-      id: snAnime.id,
-      malId: snAnime.malId,
-      title: snAnime.title,
-      description: snAnime.description,
-      coverImage: snAnime.image,
-      bannerImage: snAnime.cover,
-      genres: snAnime.genres,
-      status: this.mapStatusToGlobal(snAnime.status),
-      episodes: snAnime.totalEpisodes,
-      duration: snAnime.duration ? parseInt(snAnime.duration) : undefined,
-      rating: snAnime.rating,
-      startDate: snAnime.releaseDate,
-      endDate: snAnime.endDate,
+  /**
+   * Map status string to global AnimeStatus type
+   */
+  private mapStatusToGlobal(status: string): IAnime["status"] {
+    const statusMap: { [key: string]: IAnime["status"] } = {
+      FINISHED: "FINISHED",
+      RELEASING: "RELEASING",
+      NOT_YET_RELEASED: "NOT_YET_RELEASED",
+      CANCELLED: "CANCELLED",
     };
+    return statusMap[status.toUpperCase()] || "NOT_YET_RELEASED";
   }
 
-  private mapToGlobalEpisode(snEpisode: ISnAnimeEpisode): IAnimeEpisode {
-    return {
-      id: snEpisode.id,
-      number: snEpisode.episodeNumber,
-      title: snEpisode.title,
-      thumbnail: snEpisode.image,
-      duration: snEpisode.duration ? parseInt(snEpisode.duration) : undefined,
-    };
+  /**
+   * Map type string to global AnimeType
+   */
+  private mapTypeToGlobal(type: string): AnimeType {
+    return type.toUpperCase() === "MANGA" ? "MANGA" : "ANIME";
   }
 
-  private mapToGlobalEpisodeDetails(snEpisode: ISnAnimeEpisodeDetails): IAnimeEpisodeDetails {
-    return {
-      ...this.mapToGlobalEpisode(snEpisode),
-      streams: {
-        sources: snEpisode.streams.sources.map(source => ({
-          url: source.url,
-          quality: source.url.includes('720p') ? '720p' : source.url.includes('1080p') ? '1080p' : '480p',
-          isM3U8: source.url.endsWith('.m3u8'),
-        })),
-        subtitles: snEpisode.streams.subtitles?.map(sub => ({
-          url: sub.url,
-          lang: sub.language,
-        })),
-      },
+  /**
+   * Map season string to global AnimeSeason
+   */
+  private mapSeasonToGlobal(season: string): AnimeSeason {
+    const seasonMap: { [key: string]: AnimeSeason } = {
+      WINTER: "WINTER",
+      SPRING: "SPRING",
+      SUMMER: "SUMMER",
+      FALL: "FALL",
     };
+    return seasonMap[season.toUpperCase()];
   }
 
-  private mapToGlobalSearchResult(snResult: ISnAnimeSearchResult | ISnAnimeSpotlight | ISnAnimeRecentlyUpdated): IAnimeSearchResult {
+  /**
+   * Map SnAnime API response to global anime type
+   */
+  private mapToGlobalAnime(snAnime: ISnAnimeInfo): IAnime {
+    return snAnime;
+  }
+
+  /**
+   * Map SnAnime API response to global search result type
+   */
+  private mapToGlobalSearchResult(
+    snResult: ISnAnimeLatest | ISnAnimeSpotlight
+  ): IAnimeSearchResult {
     return {
       id: snResult.id,
       title: snResult.title,
-      coverImage: snResult.image,
+      coverImage: snResult.posterUrl,
+      episodes: snResult.totalEpisodes,
     };
   }
 
-  private mapToPaginatedResult<T, U>(
-    snResult: ISnAnimePaginatedResult<T>,
-    mapper: (item: T) => U
-  ): IPaginatedResult<U> {
-    return {
-      items: snResult.results.map(mapper),
-      total: snResult.results.length,
-      currentPage: snResult.currentPage,
-      totalPages: snResult.totalPages,
-      hasNextPage: snResult.hasNextPage,
-      hasPreviousPage: snResult.currentPage > 1,
-    };
-  }
-
-  public async getAnimeInfo(id: string): Promise<IAnime | null> {
+  /**
+   * Get anime information by ID
+   */
+  public async getAnimeInfo(id: string, language: string = "en"): Promise<IAnime | null> {
     try {
-      // Implementation here - replace with actual API call
-      const response = await fetch(`${this.baseUrl}/anime/${id}`);
-      const data = await response.json() as ISnAnimeData;
+      const url = this.addLanguageToUrl(`${this.baseUrl}/anime/info/${id}`, language);
+      const response = await fetch(url);
+      const data = (await response.json()) as ISnAnimeInfo;
+
+      if (!data) {
+        console.error("Error fetching anime info:", data);
+        return null;
+      }
+
+      // if includes error, return null
+      if (data.hasOwnProperty("error")) {
+        return null;
+      }
+
       return this.mapToGlobalAnime(data);
     } catch (error) {
-      console.error('Error fetching anime info:', error);
+      console.error("Error fetching anime info:", error);
       return null;
     }
   }
 
-  public async getSpotlight(lang: string): Promise<IPaginatedResult<IAnimeSearchResult>> {
+  /**
+   * Get latest anime releases
+   */
+  public async getLatestAnime(
+    params?: ISnAnimePaginationQuery,
+    language: string = "en"
+  ): Promise<IPaginatedResult<IAnimeLatest> | null> {
     try {
-      // Implementation here - replace with actual API call
-      const response = await fetch(`${this.baseUrl}/spotlight?lang=${lang}`);
-      const data = await response.json() as ISnAnimePaginatedResult<ISnAnimeSpotlight>;
-      return this.mapToPaginatedResult(data, item => this.mapToGlobalSearchResult(item));
-    } catch (error) {
-      console.error('Error fetching spotlight:', error);
-      return {
-        items: [],
-        total: 0,
-        currentPage: 1,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPreviousPage: false,
-      };
-    }
-  }
+      const queryParams = new URLSearchParams(params as Record<string, string>);
+      queryParams.set('language', language);
+      const response = await fetch(`${this.baseUrl}/anime/latest?${queryParams}`);
+      const data = (await response.json()) as ISnAnimePaginationResult<ISnAnimeLatest>;
 
-  public async searchAnime(
-    query: string,
-    lang: string
-  ): Promise<IPaginatedResult<IAnimeSearchResult>> {
-    try {
-      // Implementation here - replace with actual API call
-      const response = await fetch(`${this.baseUrl}/search?q=${query}&lang=${lang}`);
-      const data = await response.json() as ISnAnimePaginatedResult<ISnAnimeSearchResult>;
-      return this.mapToPaginatedResult(data, item => this.mapToGlobalSearchResult(item));
-    } catch (error) {
-      console.error('Error searching anime:', error);
-      return {
-        items: [],
-        total: 0,
-        currentPage: 1,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPreviousPage: false,
-      };
-    }
-  }
+      if (!data.data || !data.pagination) {
+        console.error("Error fetching latest anime:", data.data);
+        return null;
+      }
 
-  public async getLatestEpisodes(
-    lang: string
-  ): Promise<IPaginatedResult<IAnimeSearchResult>> {
-    try {
-      // Implementation here - replace with actual API call
-      const response = await fetch(`${this.baseUrl}/latest-episodes?lang=${lang}`);
-      const data = await response.json() as ISnAnimePaginatedResult<ISnAnimeRecentlyUpdated>;
-      return this.mapToPaginatedResult(data, item => this.mapToGlobalSearchResult(item));
-    } catch (error) {
-      console.error('Error fetching latest episodes:', error);
       return {
-        items: [],
-        total: 0,
-        currentPage: 1,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPreviousPage: false,
+        items: data.data,
+        total: data.pagination.total,
+        currentPage: data.pagination.page,
+        totalPages: data.pagination.totalPages,
+        hasNextPage: data.pagination.hasNext,
+        hasPreviousPage: data.pagination.hasPrev,
       };
-    }
-  }
-
-  public async getAnimeEpisode(
-    id: string,
-    episodeNumber: number,
-    lang: string
-  ): Promise<IAnimeEpisodeDetails | null> {
-    try {
-      // Implementation here - replace with actual API call
-      const response = await fetch(`${this.baseUrl}/anime/${id}/episode/${episodeNumber}?lang=${lang}`);
-      const data = await response.json() as ISnAnimeEpisodeDetails;
-      return this.mapToGlobalEpisodeDetails(data);
     } catch (error) {
-      console.error('Error fetching anime episode:', error);
+      console.error("Error fetching latest anime:", error);
       return null;
     }
   }
-} 
+
+  /**
+   * Get spotlight anime
+   */
+  public async getSpotlightAnime(language: string = "en"): Promise<IAnimeSpotlight[] | null> {
+    try {
+      const url = this.addLanguageToUrl(`${this.baseUrl}/anime/spotlight`, language);
+      const response = await fetch(url);
+      const data = (await response.json()) as ISnAnimeSpotlight[];
+
+      if (!data) {
+        console.error("Error fetching spotlight anime:", data);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching spotlight anime:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Get optimized image through proxy
+   */
+  public getProxyImageUrl(imageUrl: string): string {
+    const encodedUrl = encodeURIComponent(imageUrl);
+    return `${this.baseUrl}/proxy/image?url=${encodedUrl}`;
+  }
+
+  /**
+   * Get optimized video through proxy
+   */
+  public getProxyVideoUrl(videoUrl: string): string {
+    const encodedUrl = encodeURIComponent(videoUrl);
+    return `${this.baseUrl}/proxy/video?url=${encodedUrl}`;
+  }
+
+  /**
+   * Get episode details by anime ID and episode number
+   */
+  public async getEpisodeDetails(animeId: string, episodeNumber: string, language: string = "en"): Promise<ISnAnimeEpisodeDetails | null> {
+    try {
+      const url = this.addLanguageToUrl(`${this.baseUrl}/anime/episode/${animeId}/${episodeNumber}`, language);
+      const response = await fetch(url);
+      const data = (await response.json()) as ISnAnimeEpisodeDetails;
+
+      if (data.hasOwnProperty("error")) {
+        console.error("Error fetching episode details:", (data as any).error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching episode details:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Check API health status
+   */
+  public async checkHealth(): Promise<ISnAnimeHealthCheck | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/health`);
+      const data = (await response.json()) as ISnAnimeApiResponse<ISnAnimeHealthCheck>;
+
+      if (!data.success || !data.data) {
+        console.error("Error checking health:", data.message);
+        return null;
+      }
+
+      return data.data;
+    } catch (error) {
+      console.error("Error checking health:", error);
+      return null;
+    }
+  }
+}

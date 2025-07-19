@@ -215,3 +215,141 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Atmospheric effects */
+.atmospheric-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.atmospheric-glow::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, var(--glow-color, rgba(239, 68, 68, 0.1)) 0%, transparent 70%);
+  opacity: 0.5;
+  animation: atmospheric-pulse 4s ease-in-out infinite;
+}
+
+@keyframes atmospheric-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+/* Enhanced glass morphism for video player */
+.glass-video {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Smooth color transitions */
+.color-transition {
+  transition: background-color 1s ease-out, color 1s ease-out, border-color 1s ease-out;
+}
+
+/* Video player specific styles */
+.video-container {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Prevent layout shifts */
+.aspect-video {
+  aspect-ratio: 16 / 9;
+}
+
+/* Enhanced focus states */
+.focus-visible:focus {
+  outline: 2px solid rgba(239, 68, 68, 0.5);
+  outline-offset: 2px;
+}
+
+/* Video Player Slider Styles */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-track {
+  background: rgba(255, 255, 255, 0.2);
+  height: 4px;
+  border-radius: 2px;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #fff;
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-top: -4px;
+  transition: all 0.2s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+}
+
+.slider::-moz-range-track {
+  background: rgba(255, 255, 255, 0.2);
+  height: 4px;
+  border-radius: 2px;
+}
+
+.slider::-moz-range-thumb {
+  background: #fff;
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+}
+
+/* Color input styles */
+input[type="color"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
