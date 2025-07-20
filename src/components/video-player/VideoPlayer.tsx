@@ -48,7 +48,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const sourcePriority = useMemo((): SourcePriority => {
     const hlsSources = streams.sources.filter(source => source.isM3U8);
     const mp4Sources = streams.sources.filter(source => !source.isM3U8);
-    
+
     return {
       preferredSource: hlsSources[0] || null, // Use first HLS source as preferred
       fallbackSources: mp4Sources,
@@ -61,19 +61,19 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const mp4QualityLevels = useMemo(() => {
     const mp4Sources = streams.sources.filter(source => !source.isM3U8);
     const qualityCount: Record<string, number> = {};
-    
+
     return mp4Sources.map((source, index) => {
       const quality = source.quality || 'Unknown';
       const server = source.server || `Server ${index + 1}`;
-      
+
       // Handle duplicate qualities
       qualityCount[quality] = (qualityCount[quality] || 0) + 1;
       const duplicateIndex = qualityCount[quality] - 1;
-      
-      const name = duplicateIndex > 0 
-        ? `${quality} (${duplicateIndex})` 
+
+      const name = duplicateIndex > 0
+        ? `${quality} (${duplicateIndex})`
         : quality;
-      
+
       return {
         index,
         quality,
@@ -105,23 +105,23 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     // If current language is not available, set to default
     if (currentLang !== 'off' && !availableLanguages.includes(currentLang)) {
       // Try to find English first, then use the first available
-      const defaultLang = availableLanguages.find(lang => 
+      const defaultLang = availableLanguages.find(lang =>
         lang.toLowerCase().includes('en') || lang.toLowerCase().includes('english')
       ) || availableLanguages[0];
-      
+
       updateSettings({ selectedSubtitleLang: defaultLang });
     }
-    
+
     // If no subtitle is selected and subtitles are available, auto-select default
     if (currentLang === 'off' && availableLanguages.length > 0) {
-      const defaultLang = availableLanguages.find(lang => 
+      const defaultLang = availableLanguages.find(lang =>
         lang.toLowerCase().includes('en') || lang.toLowerCase().includes('english')
       ) || availableLanguages[0];
-      
+
       updateSettings({ selectedSubtitleLang: defaultLang });
     }
   }, [streams.subtitles, settings.selectedSubtitleLang, updateSettings]);
-  
+
   const [playerState, setPlayerState] = useState<PlayerState>({
     isPlaying: false,
     currentTime: 0,
@@ -189,13 +189,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleHlsError = useCallback((error: PlayerError) => {
     console.error('HLS Error in component:', error);
     setPlayerError(error);
-    
+
     // If it's a fatal error, mark current source as failed and try fallback
     if (error.fatal) {
       if (currentSource) {
         console.log('Marking source as failed:', currentSource.url);
         setFailedSources(prev => new Set([...prev, currentSource.url]));
-        
+
         // If HLS failed and we have MP4 fallbacks, switch to MP4
         if (currentSourceType === 'hls' && sourcePriority.fallbackSources.length > 0) {
           console.log('HLS failed, switching to MP4 fallback');
@@ -204,10 +204,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           setPlayerError(null); // Clear error to try MP4
         } else {
           // No more fallbacks available
-          setPlayerState(prev => ({ 
-            ...prev, 
-            isLoading: false, 
-            error: error.message 
+          setPlayerState(prev => ({
+            ...prev,
+            isLoading: false,
+            error: error.message
           }));
         }
       }
@@ -291,7 +291,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Controls visibility
   const showControls = useCallback(() => {
     setPlayerState(prev => ({ ...prev, showControls: true }));
-    
+
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current);
     }
@@ -327,7 +327,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         });
       });
     }
-    
+
     showPlayPauseIndicatorBriefly();
   }, [playerState.isPlaying, showPlayPauseIndicatorBriefly, t]);
 
@@ -368,7 +368,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleRetry = useCallback(() => {
     setPlayerError(null);
     setPlayerState(prev => ({ ...prev, error: null, isLoading: true }));
-    
+
     // Reload the current source
     if (videoRef.current && currentSource) {
       videoRef.current.load();
@@ -387,7 +387,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const handleError = (e: Event) => {
       const videoError = video.error;
       console.error('Video error:', videoError);
-      
+
       setPlayerError({
         type: 'media',
         message: videoError?.message || t('videoPlayer.unknownVideoError'),
@@ -395,10 +395,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         fatal: true,
         retry: true,
       });
-      
-      setPlayerState(prev => ({ 
-        ...prev, 
-        isLoading: false, 
+
+      setPlayerState(prev => ({
+        ...prev,
+        isLoading: false,
         error: videoError?.message || t('videoPlayer.videoPlaybackError')
       }));
     };
@@ -423,7 +423,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         ...prev,
         duration: video.duration || 0,
       }));
-      
+
       // Apply saved settings
       video.volume = settings.volume;
       video.muted = settings.isMuted;
@@ -466,12 +466,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const handleKeyPress = (e: KeyboardEvent) => {
       // Only handle shortcuts when player is focused and not typing in an input
       if (!videoRef.current || !isPlayerFocused) return;
-      
+
       // Don't handle shortcuts if user is typing in an input field
       const activeElement = document.activeElement as HTMLElement;
       if (activeElement && (
-        activeElement.tagName === 'INPUT' || 
-        activeElement.tagName === 'TEXTAREA' || 
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
         activeElement.contentEditable === 'true'
       )) {
         return;
@@ -519,11 +519,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const isLoading = playerState.isLoading || hlsLoading;
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className={`relative bg-black aspect-video w-full overflow-hidden group ${
-        playerState.isFullscreen && !playerState.showControls ? 'cursor-none' : ''
-      }`}
+      className={`relative bg-black aspect-video w-full overflow-hidden group ${playerState.isFullscreen && !playerState.showControls ? 'cursor-none' : ''
+        }`}
       onMouseMove={showControls}
       onMouseEnter={() => setIsPlayerFocused(true)}
       onMouseLeave={() => {
@@ -546,7 +545,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       />
 
       {/* Click to play/pause overlay - only covers video area, not controls */}
-      <div 
+      <div
         className="absolute inset-0 bottom-16 md:bottom-20"
         onClick={handlePlayPause}
       />
@@ -598,9 +597,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       )}
 
       {/* Controls */}
-      <div className={`absolute inset-0 transition-opacity duration-300 ${
-        playerState.showControls ? 'opacity-100' : 'opacity-0'
-      }`}>
+      <div className={`absolute inset-0 transition-opacity duration-300 ${playerState.showControls ? 'opacity-100' : 'opacity-0'
+        }`}>
         <VideoControls
           playerState={playerState}
           volume={settings.volume}

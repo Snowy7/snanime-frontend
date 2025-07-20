@@ -54,11 +54,25 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
+      // Check if video is ready and has valid dimensions
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        frameRequestRef.current = requestAnimationFrame(extractFrame);
+        return;
+      }
+
       // Use small canvas for better performance
       canvas.width = 8;
       canvas.height = 8;
 
       try {
+        // Check if the video allows cross-origin access for canvas operations
+        if (video.crossOrigin !== 'anonymous') {
+          // console.warn('Video does not have cross-origin access, skipping frame extraction');
+          // Continue animation loop but skip color extraction
+          frameRequestRef.current = requestAnimationFrame(extractFrame);
+          return;
+        }
+
         // Draw current video frame
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
@@ -111,18 +125,25 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
             b: Math.round(avgColor.b / historyLength),
           };
 
-                  // Only update if color changed significantly to reduce re-renders
-        const colorDiff = Math.abs(newColor.r - dominantColor.r) + 
-                         Math.abs(newColor.g - dominantColor.g) + 
-                         Math.abs(newColor.b - dominantColor.b);
-        
-        if (colorDiff > 50) {
-          setDominantColor(newColor);
-        }
+          // Only update if color changed significantly to reduce re-renders
+          const colorDiff = Math.abs(newColor.r - dominantColor.r) + 
+                           Math.abs(newColor.g - dominantColor.g) + 
+                           Math.abs(newColor.b - dominantColor.b);
+          
+          if (colorDiff > 50) {
+            setDominantColor(newColor);
+          }
         }
       } catch (error) {
-        // Silently handle any canvas errors
+        // Handle CORS and other canvas errors gracefully
         console.warn('Color extraction error:', error);
+        
+        // If it's a CORS error, we can't extract colors from this video
+        if (error instanceof DOMException && error.message.includes('insecure')) {
+          console.warn('CORS policy prevents color extraction from this video source');
+          // Stop trying to extract colors for this video
+          return;
+        }
       }
 
       // Continue animation loop

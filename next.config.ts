@@ -19,7 +19,9 @@ const nextConfig: NextConfig = {
       "raw.githubusercontent.com",
       "cdn.noitatnemucod.net",
       "img.anslayer.com",
-      "animeowl.me"
+      "animeowl.me",
+      "app.sanime.net",
+      "witanime.pics"
     ]
   }
 };

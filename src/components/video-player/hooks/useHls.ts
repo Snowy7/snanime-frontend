@@ -45,10 +45,10 @@ export const useHls = ({
   const tryDirectLoad = useCallback((video: HTMLVideoElement, sourceUrl: string): Promise<boolean> => {
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
-        console.log('Direct MP4 load timed out after 5 seconds');
+        console.log('Direct MP4 load timed out after 30 seconds');
         cleanup();
         resolve(false);
-      }, 5000); // 5 second timeout for direct load attempt
+      }, 30000); // 30 second timeout for direct load attempt
 
       const cleanup = () => {
         clearTimeout(timeout);
