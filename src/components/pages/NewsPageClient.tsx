@@ -121,18 +121,18 @@ export default function NewsPageClient() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-red-900/20 border border-red-800 rounded-xl p-6 mb-8 backdrop-blur-sm"
+            className="bg-primary/10 border border-primary/20 rounded-xl p-6 mb-8 backdrop-blur-sm"
           >
             <div className="flex items-center mb-4">
-              <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
-              <h3 className="text-lg font-medium text-red-200">
+              <AlertCircle className="w-5 h-5 text-primary mr-2" />
+              <h3 className="text-lg font-medium text-primary/90">
                 {t('newsPage.error')}
               </h3>
             </div>
-            <p className="text-red-300 mb-4">{error}</p>
+            <p className="text-primary/80 mb-4">{error}</p>
             <button
               onClick={loadNews}
-              className="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors shadow-lg"
+              className="inline-flex items-center px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors shadow-lg"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               {t('newsPage.retry')}

@@ -191,7 +191,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ isExpanded, onToggle, o
                   value={searchQuery}
                   onChange={handleSearchChange}
                   placeholder="Search anime..."
-                  className="h-10 w-full bg-black/50 text-white rounded-full px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200 border border-white/20 placeholder-neutral-400"
+                  className="h-10 w-full bg-neutral-900/50 text-white rounded-full px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-200 border border-white/10 placeholder-neutral-400"
                 />
                 {searchQuery && (
                   <button
@@ -199,8 +199,9 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ isExpanded, onToggle, o
                     onClick={() => {
                       setSearchQuery("");
                       setSearchResults([]);
+                      searchInputRef.current?.focus();
                     }}
-                    className={`absolute ${getDirection() === "rtl" ? "left-3" : "left-3"} p-1 text-neutral-400 hover:text-white transition-colors`}
+                    className={`absolute ${getDirection() === "rtl" ? "left-3" : "right-3"} p-1 text-neutral-400 hover:text-white transition-colors`}
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -209,47 +210,47 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ isExpanded, onToggle, o
 
               {/* Search Dropdown */}
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className="absolute top-full left-0 right-0 mt-2 bg-black/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-800/50 overflow-hidden z-50 max-h-96 overflow-y-auto"
+                className="absolute top-full right-0 mt-4 w-[400px] bg-black/90 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden z-50 max-h-[60vh] overflow-y-auto"
               >
                 {/* Search Results */}
                 {searchQuery && (
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-medium text-white">Search Results</h3>
+                  <div className="p-2">
+                    <div className="flex items-center justify-between px-2 py-2 mb-1">
+                      <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider">Search Results</h3>
                       {searchQuery && (
                         <Link
                           href={`/browse?search=${encodeURIComponent(searchQuery)}`}
-                          className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                          className="text-xs text-primary hover:text-primary/80 transition-colors"
                           onClick={() => addToSearchHistory(searchQuery)}
                         >
-                          View all results
+                          View all
                         </Link>
                       )}
                     </div>
 
                     {isLoading ? (
                       <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent"></div>
                       </div>
                     ) : searchResults.length > 0 ? (
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         {searchResults.map((anime) => (
                           <Link
                             key={anime.id}
                             href={`/anime/${anime.id}`}
                             onClick={() => addToSearchHistory(searchQuery)}
-                            className="flex items-center space-x-3 p-2 rounded-lg hover:bg-neutral-800/50 transition-colors group"
+                            className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/10 transition-colors group"
                           >
-                            <div className="flex-shrink-0 w-12 h-16 relative overflow-hidden rounded-md">
+                            <div className="flex-shrink-0 w-10 h-14 relative overflow-hidden rounded-lg bg-neutral-800">
                               <Image src={anime.posterUrl} alt={anime.title} fill className="object-cover" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-sm font-medium text-white group-hover:text-blue-400 truncate transition-colors">{anime.title}</h4>
-                              <p className="text-xs text-neutral-400">
+                              <h4 className="text-sm font-medium text-white group-hover:text-primary truncate transition-colors">{anime.title}</h4>
+                              <p className="text-xs text-neutral-400 mt-0.5">
                                 {anime.type} • {anime.duration}
                               </p>
                             </div>
@@ -258,7 +259,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ isExpanded, onToggle, o
                       </div>
                     ) : searchQuery.length > 2 && !isLoading ? (
                       <div className="py-8 text-center">
-                        <p className="text-neutral-400 text-sm">No results found for "{searchQuery}"</p>
+                        <p className="text-neutral-400 text-sm">No results found</p>
                       </div>
                     ) : null}
                   </div>

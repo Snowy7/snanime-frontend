@@ -84,8 +84,9 @@ export class AniListService {
   }
 
   private mapToSearchResult(anilistAnime: IAnilistAnimeData): IAnimeSearchResult {
+    const id = anilistAnime.idMal ? anilistAnime.idMal.toString() : anilistAnime.id.toString();
     return {
-      id: anilistAnime.idMal.toString(),
+      id: `3:${id}`,
       title: anilistAnime.title.english || anilistAnime.title.romaji,
       coverImage: anilistAnime.coverImage.large,
       description: anilistAnime.description || undefined,
@@ -344,9 +345,9 @@ export class AniListService {
   public async searchAnime(
     params: IAnimeSearchParams
   ): Promise<IPaginatedResult<IAnimeSearchResult>> {
-    if (!params.query?.trim()) {
+    /* if (!params.query?.trim()) {
       throw new Error("Search query cannot be empty");
-    }
+    } */
 
     // Base variables
     const variables: IAnilistSearchVariables = {

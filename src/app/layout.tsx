@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import Navbar from "@/components/Navbar";
-import { AnimeProvider } from "@/context/AnimeContext";
 import Providers from "@/components/Providors";
+import { Noto_Sans_Arabic } from "next/font/google";
+import { getServerLanguage } from "@/lib/server-utils";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,7 +16,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const notoArabic = Noto_Sans_Arabic({
+  variable: "--font-noto-arabic",
+  subsets: ["arabic"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: {
     default: "SnAnime",
     template: "%s | SnAnime",
@@ -56,14 +64,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const language = await getServerLanguage();
+  const dir = language === "ar" ? "rtl" : "ltr";
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html
+      lang={language}
+      dir={dir}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoArabic.variable}`}
+      suppressHydrationWarning
+    >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning>
         <Providers>
           <Navbar />
           {children}

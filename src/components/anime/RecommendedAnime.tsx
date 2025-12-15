@@ -243,13 +243,22 @@ const RecommendedAnime: React.FC<RecommendedAnimeProps> = ({ recommendations, cl
           >
             {relatedAnime.map((anime, index) => (
               <div 
-                key={anime.id} 
+                key={`${anime.id}-${index}`} 
                 className="flex-shrink-0 w-32 sm:w-40 md:w-48 group/card"
                 style={{
                   transform: "translateZ(0)", // Hardware acceleration for each card
                 }}
               >
-                <AnimeCard show={anime} />
+                <AnimeCard 
+                  id={anime.id}
+                  title={anime.title}
+                  posterUrl={anime.posterUrl || null}
+                  type={anime.type}
+                  status={anime.status}
+                  year={anime.year}
+                  episodes={anime.totalEpisodes}
+                  rating={anime.averageScore ? parseFloat((anime.averageScore / 10).toFixed(1)) : undefined}
+                />
               </div>
             ))}
           </div>

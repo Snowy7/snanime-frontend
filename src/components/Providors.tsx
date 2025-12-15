@@ -1,5 +1,6 @@
 import { AnimeProvider } from "@/context/AnimeContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 export default function Providers({
   children,
@@ -8,7 +9,9 @@ export default function Providers({
 }>) {
   return (
     <LanguageProvider>
-      <AnimeProvider>{children}</AnimeProvider>
+      <AuthProvider>
+        <AnimeProvider>{children}</AnimeProvider>
+      </AuthProvider>
     </LanguageProvider>
   );
 }

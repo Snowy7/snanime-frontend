@@ -367,7 +367,7 @@ const EpisodePlayer: React.FC<EpisodePlayerProps> = ({ episodeDetails, onEpisode
                       onClick={() => onEpisodeChange?.(episode.number)}
                       className={`group relative p-4 rounded-xl transition-all duration-200 text-left border ${
                         episode.number === episodeDetails.number
-                          ? "bg-gradient-to-br from-red-500/20 to-red-600/10 border-red-500/30 text-white shadow-lg shadow-red-500/10"
+                          ? "bg-gradient-to-br from-primary/20 to-primary/10 border-primary/30 text-white shadow-lg shadow-primary/10"
                           : "bg-white/5 backdrop-blur border-white/10 text-white/70 hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-lg"
                       }`}
                     >
@@ -384,7 +384,7 @@ const EpisodePlayer: React.FC<EpisodePlayerProps> = ({ episodeDetails, onEpisode
                       </div>
                       {episode.number === episodeDetails.number && (
                         <div className="absolute top-2 right-2">
-                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50"></div>
+                          <div className="w-2 h-2 bg-primary rounded-full animate-pulse shadow-lg shadow-primary/50"></div>
                         </div>
                       )}
                     </button>

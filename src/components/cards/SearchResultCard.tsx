@@ -1,5 +1,5 @@
 import React from "react";
-import BaseCard from "@/components/ui/BaseCard";
+import AnimeCard from "@/components/cards/AnimeCard";
 import { IAnimeSearchResult } from "@/types/anime";
 
 interface SearchResultCardProps {
@@ -7,52 +7,35 @@ interface SearchResultCardProps {
   viewMode?: "grid" | "list";
 }
 
-const SearchResultCard: React.FC<SearchResultCardProps> = ({ anime, viewMode = "grid" }) => {
-  const extraInfo = [];
-  
-  // Add format info (TV, Movie, etc.)
-  if (anime.format) {
-    extraInfo.push({ label: "Format", value: anime.format });
+const SearchResultCard: React.FC<SearchResultCardProps> = ({ anime, viewMode }) => {
+  if (viewMode === "list") {
+    // Fallback/Different layout for list view if needed later, 
+    // for now we can just use the card or a simple row.
+    // Given the design request focused on grids, we'll keep it simple or TODO a list row.
+    return <AnimeCard 
+      id={anime.id} 
+      title={anime.title} 
+      posterUrl={anime.coverImage}
+      type={anime.format}
+      rating={anime.rating ? anime.rating / 10 : undefined} // Convert 1-100 to 1-10 if needed, or keep as is
+      status={anime.status}
+      episodes={anime.episodes}
+      year={anime.seasonYear}
+    />;
   }
-
-  // Add episode count
-  if (anime.episodes) {
-    extraInfo.push({ label: "Episodes", value: anime.episodes.toString() });
-  }
-
-  // Add season info
-  if (anime.season && anime.seasonYear) {
-    extraInfo.push({ 
-      label: "Season", 
-      value: `${anime.season.charAt(0) + anime.season.slice(1).toLowerCase()} ${anime.seasonYear}` 
-    });
-  }
-
-  // Add main studio
-  const mainStudio = anime.studios?.find(studio => studio.isMain);
-  if (mainStudio) {
-    extraInfo.push({ label: "Studio", value: mainStudio.name });
-  }
-
-  console.log(anime);
 
   return (
-    <BaseCard
-      href={`/anime/3:${anime.id}`}
-      imageUrl={anime.coverImage}
-      title={anime.title}
-      badges={[
-        ...(anime.status ? [{ text: anime.status, color: "bg-green-600/20 text-green-300" }] : [])
-      ]}
-      rating={anime.rating || undefined}
-      description={anime.description}
-      tags={anime.genres}
-      extraInfo={extraInfo}
-      hoverEffect="scale"
-      viewMode={viewMode}
-      size={viewMode === "list" ? "sm" : "md"}
+    <AnimeCard 
+      id={anime.id} 
+      title={anime.title} 
+      posterUrl={anime.coverImage}
+      type={anime.format}
+      rating={anime.rating ? Number((anime.rating / 10).toFixed(1)) : undefined}
+      status={anime.status}
+      episodes={anime.episodes}
+      year={anime.seasonYear}
     />
   );
 };
 
-export default SearchResultCard; 
+export default SearchResultCard;

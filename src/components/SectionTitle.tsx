@@ -12,11 +12,10 @@ const SectionTitle: React.FC<SectionTitleProps> = ({ title, onViewAllClick }) =>
   return (
     <div className="flex items-center justify-between mb-4 md:mb-6">
       <div className="flex items-center">
-        <Play className="w-5 h-5 md:w-6 md:h-6 mx-4 text-red-400" fill="currentColor" />
         <h2 className="text-lg md:text-xl lg:text-2xl font-semibold text-white">{title}</h2>
       </div>
       {onViewAllClick && (
-        <button onClick={onViewAllClick} className="text-sm md:text-base text-red-400 hover:text-red-300 transition-colors font-medium cursor-pointer">
+        <button onClick={onViewAllClick} className="text-sm md:text-base text-primary hover:text-primary/80 transition-colors font-medium cursor-pointer">
           {t("view_all")}
         </button>
       )}

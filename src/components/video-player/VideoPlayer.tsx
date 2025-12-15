@@ -550,14 +550,25 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         onClick={handlePlayPause}
       />
 
-      {/* Play/Pause Indicator */}
+      {/* Center Play Button - Always visible when paused */}
+      {!playerState.isPlaying && !isLoading && !playerError && (
+        <div 
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        >
+          <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center shadow-xl shadow-primary/20">
+            <Play className="w-7 h-7 md:w-8 md:h-8 text-primary-foreground fill-current ml-1" />
+          </div>
+        </div>
+      )}
+
+      {/* Play/Pause Indicator Animation */}
       {showPlayPauseIndicator && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="bg-black/60 backdrop-blur-sm rounded-full p-4 animate-pulse">
+          <div className="bg-black/50 backdrop-blur-sm rounded-full p-4 animate-ping">
             {playerState.isPlaying ? (
-              <Pause className="w-12 h-12 text-white" />
+              <Pause className="w-8 h-8 text-white" />
             ) : (
-              <Play className="w-12 h-12 text-white" />
+              <Play className="w-8 h-8 text-white fill-white" />
             )}
           </div>
         </div>
@@ -580,13 +591,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {playerError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80">
           <div className="text-center max-w-md p-6">
-            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <AlertCircle className="w-16 h-16 text-primary mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-white mb-2">{t('videoPlayer.playbackError')}</h3>
             <p className="text-white/70 mb-4">{playerError.message}</p>
             {playerError.retry && (
               <button
                 onClick={handleRetry}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors flex items-center gap-2 mx-auto"
+                className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors flex items-center gap-2 mx-auto"
               >
                 <RefreshCw className="w-4 h-4" />
                 {t('retry')}

@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import enTranslations from "../locales/en.json";
+import arTranslations from "../locales/ar.json";
 
 export type Language = "en" | "ar";
 
@@ -80,7 +82,9 @@ const interpolateParams = (text: string, params: Record<string, any>): string =>
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>("en");
-  const [translations, setTranslations] = useState<Translations>({});
+  // Start with a synchronous default so we don't spam "missing translation" warnings
+  // during the initial client render.
+  const [translations, setTranslations] = useState<Translations>(enTranslations as unknown as Translations);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -106,11 +110,31 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
         selectedLanguage = supportedLanguage?.code || "en";
       }
 
-      setLanguage(selectedLanguage);
+      // Load translations for the selected language (prefer sync for bundled languages)
+      setIsLoading(true);
+      setLanguageState(selectedLanguage);
+      if (selectedLanguage === 'en') {
+        setTranslations(enTranslations as unknown as Translations);
+      } else if (selectedLanguage === 'ar') {
+        setTranslations(arTranslations as unknown as Translations);
+      } else {
+        const initialTranslations = await loadTranslations(selectedLanguage);
+        setTranslations(initialTranslations);
+      }
+      setIsLoading(false);
     };
 
     initializeLanguage();
   }, []);
+
+  // Keep <html> lang/dir in sync for proper RTL + browser behaviors
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const dir = availableLanguages.find((l) => l.code === language)?.direction || "ltr";
+    document.documentElement.lang = language;
+    document.documentElement.dir = dir;
+    document.documentElement.classList.toggle("rtl", dir === "rtl");
+  }, [language]);
 
   const setLanguage = async (newLanguage: Language) => {
     setIsLoading(true);
@@ -120,8 +144,14 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     localStorage.setItem(STORAGE_KEY, newLanguage);
     document.cookie = `app-language=${newLanguage}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
     
-    const newTranslations = await loadTranslations(newLanguage);
-    setTranslations(newTranslations);
+    if (newLanguage === 'en') {
+      setTranslations(enTranslations as unknown as Translations);
+    } else if (newLanguage === 'ar') {
+      setTranslations(arTranslations as unknown as Translations);
+    } else {
+      const newTranslations = await loadTranslations(newLanguage);
+      setTranslations(newTranslations);
+    }
     setIsLoading(false);
   };
 
@@ -130,6 +160,12 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     if (!key) {
       console.warn('Empty translation key provided');
       return '';
+    }
+
+    // During initial mount we may still be loading async translations; don't spam warnings.
+    if (isLoading) {
+      const fallback = key.split('.').pop() || key;
+      return fallback.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
     }
 
     const translation = getTranslation(translations, key);
@@ -161,9 +197,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
 
   return (
     <LanguageContext.Provider value={value}>
-      <div dir={getDirection()} className={`min-h-screen w-full ${language === "ar" ? "text-right" : "text-left"} transition-all duration-300`}>
         {children}
-      </div>
     </LanguageContext.Provider>
   );
 };

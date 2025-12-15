@@ -174,7 +174,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         >
           <span>{speed}x</span>
           {settings.playbackSpeed === speed && (
-            <Check className="w-4 h-4 text-red-500" />
+            <Check className="w-4 h-4 text-primary" />
           )}
         </button>
       ))}
@@ -206,7 +206,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
               <span className="text-xs text-white/50">{level.server}</span>
             </div>
             {settings.selectedMp4Quality === index && (
-              <Check className="w-4 h-4 text-red-500" />
+              <Check className="w-4 h-4 text-primary" />
             )}
           </button>
         ))
@@ -219,7 +219,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
           >
             <span>{t('auto')}</span>
             {settings.selectedHlsQuality === -1 && (
-              <Check className="w-4 h-4 text-red-500" />
+              <Check className="w-4 h-4 text-primary" />
             )}
           </button>
           
@@ -231,7 +231,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             >
               <span>{level.height}p</span>
               {settings.selectedHlsQuality === index && (
-                <Check className="w-4 h-4 text-red-500" />
+                <Check className="w-4 h-4 text-primary" />
               )}
             </button>
           ))}
@@ -258,7 +258,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
       >
         <span>{t('off')}</span>
         {settings.selectedSubtitleLang === 'off' && (
-          <Check className="w-4 h-4 text-red-500" />
+          <Check className="w-4 h-4 text-primary" />
         )}
       </button>
       
@@ -270,7 +270,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         >
           <span>{subtitle.lang}</span>
           {settings.selectedSubtitleLang === subtitle.lang && (
-            <Check className="w-4 h-4 text-red-500" />
+            <Check className="w-4 h-4 text-primary" />
           )}
         </button>
       ))}
@@ -408,7 +408,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
               <span className="text-xs text-white/50">Adaptive quality</span>
             </div>
             {currentSourceType === 'hls' && (
-              <Check className="w-4 h-4 text-red-500" />
+              <Check className="w-4 h-4 text-primary" />
             )}
           </button>
         )}
@@ -423,7 +423,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
               <span className="text-xs text-white/50">Fixed quality</span>
             </div>
             {currentSourceType === 'mp4' && (
-              <Check className="w-4 h-4 text-red-500" />
+              <Check className="w-4 h-4 text-primary" />
             )}
           </button>
         )}

@@ -1,10 +1,14 @@
 "use client";
 import React from "react";
 import Image from "next/image";
-import { Play, Bookmark, Share2, Star, Calendar, Clock, Tv, Users, Globe } from "lucide-react";
-import { ControlButton } from "@/components/ui/button";
+import { Play, Bookmark, Star, Check, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
+import { userService } from "@/services/user";
 import { IAnime } from "@/types/anime";
+import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface AnimeDetailsProps {
   anime: IAnime;
@@ -12,275 +16,202 @@ interface AnimeDetailsProps {
 
 const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
   const { t } = useLanguage();
+  const { user, refresh } = useAuth();
+  const router = useRouter();
 
-  // Format text to capitalize first letter of each word and remove unnecessary punctuation
-  const formatText = (text: string) => {
-    return text
-      .split(",")
-      .map((word) =>
-        word
-          .trim()
-          .split(".")
-          .map((part) => part.trim())
-          .filter((part) => part.length > 0)
-          .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-          .join(" ")
-      )
-      .join(", ");
-  };
-
-  // Format description by converting HTML tags to JSX
-  const formatDescription = (description: string) => {
-    return description.split(/<br\s*\/?>/i).map((text, index) => (
-      <React.Fragment key={index}>
-        {text.split(/(<i>.*?<\/i>)/).map((part, idx) => {
-          if (part.startsWith("<i>") && part.endsWith("</i>")) {
-            // Extract text between <i> tags and render in italics
-            const italicText = part.replace(/<\/?i>/g, "");
-            return (
-              <i key={idx} className="text-neutral-200">
-                {italicText}
-              </i>
-            );
-          }
-          return <span key={idx}>{part}</span>;
-        })}
-        {index < description.split(/<br\s*\/?>/i).length - 1 && <br />}
-      </React.Fragment>
-    ));
-  };
+  const isSaved = React.useMemo(() => {
+    if (!user?.preferences?.saves) return false;
+    return (user.preferences.saves as any[]).some((s) => s.animeId === anime.id);
+  }, [user, anime.id]);
 
   const handleWatchNow = () => {
-    // TODO: Navigate to episode 1 or continue watching
-    console.log("Watch now clicked");
-  };
-
-  const handleSave = () => {
-    // TODO: Add to watchlist
-    console.log("Save clicked");
-  };
-
-  const handleShare = () => {
-    // TODO: Share functionality
-    if (navigator.share) {
-      navigator.share({
-        title: anime.title,
-        text: `Check out ${anime.title} on SnAnime`,
-        url: window.location.href,
-      });
-    } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
-      console.log("Link copied to clipboard");
+    const episodeSection = document.getElementById("episodes-section");
+    if (episodeSection) {
+      episodeSection.scrollIntoView({ behavior: "smooth" });
     }
   };
 
-  const getSubDubText = (subOrDub: string) => {
-    if (subOrDub === "both") return t("both");
-    if (subOrDub === "sub") return t("sub");
-    if (subOrDub === "dub") return t("dub");
-    return subOrDub.charAt(0).toUpperCase() + subOrDub.slice(1);
+  const handleSave = async () => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      if (isSaved) {
+        await userService.removeSave(anime.id);
+      } else {
+        await userService.addSave(anime);
+      }
+      await refresh();
+    } catch (error) {
+      console.error("Failed to update save status:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <>
-      {/* Banner Background */}
-      {anime.bannerImage && (
-        <div className="fixed inset-0 h-full overflow-hidden">
+    <div className="relative w-full min-h-[500px] sm:min-h-[550px] lg:min-h-[600px] xl:h-[80vh] bg-background rounded-b-[2rem] sm:rounded-b-[3rem] overflow-hidden shadow-2xl flex items-center z-10">
+      {/* Background Layer */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-background/20 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/50 to-transparent z-10" />
+        
+        {anime.bannerImage ? (
           <Image
             src={anime.bannerImage}
             alt={anime.title}
             fill
-            style={{ objectFit: "cover" }}
+            className="object-cover opacity-90 transition-opacity duration-700"
             priority
-            className="transition-transform duration-700 blur-sm grayscale-75"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/75 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/40" />
+        ) : anime.posterUrl ? (
+          <Image
+            src={anime.posterUrl}
+            alt={anime.title}
+            fill
+            className="object-cover blur-md scale-105 opacity-70 transition-opacity duration-700"
+            priority
+          />
+        ) : null}
+      </div>
 
-          {/* overlay just a black overlay */}
-          <div className="absolute inset-0 bg-black/70" />
-        </div>
-      )}
-
-      {/* Content */}
-      <div className="relative z-10 px-4 md:px-8 lg:px-16 pt-32 pb-12 container mx-auto">
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
-          {/* Poster */}
-          <div className="flex-shrink-0 animate-fade-in">
-            <div className="relative w-64 h-96 md:w-72 md:h-[432px] overflow-hidden rounded-lg shadow-2xl group">
-              <Image
-                src={anime.posterUrl}
-                alt={anime.title}
-                fill
-                style={{ objectFit: "cover" }}
-                priority
-                className="transition-transform duration-300 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      {/* Content Container */}
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 relative z-20 pt-20 sm:pt-24 pb-8 sm:pb-12">
+        <div className="container mx-auto">
+          <div className="grid lg:grid-cols-[260px_1fr] xl:grid-cols-[300px_1fr] gap-6 lg:gap-10 xl:gap-16 items-start">
+          
+            {/* Left: Poster Card */}
+            <div className="hidden lg:block relative group mt-4">
+              <div className="relative aspect-[2/3] w-full rounded-2xl overflow-hidden shadow-2xl shadow-black/50 ring-1 ring-white/10 transition-all duration-500 hover:scale-[1.02]">
+              {anime.posterUrl && (
+                <Image
+                  src={anime.posterUrl}
+                  alt={anime.title}
+                  fill
+                  className="object-cover transition-transform duration-700"
+                  priority
+                />
+              )}
             </div>
           </div>
 
-          {/* Info */}
-          <div className="flex-1 space-y-6">
-            {/* Title */}
-            <div className="animate-fade-in">
-              <h1 className="text-4xl md:text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight">
+          {/* Right: Info & Actions */}
+            <div className="flex flex-col space-y-4 sm:space-y-5 lg:space-y-6">
+            
+              {/* Title */}
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white leading-tight tracking-tight">
                 {anime.title}
               </h1>
-              <div className="flex flex-wrap items-center gap-4 text-neutral-300">
-                <div className="flex items-center gap-1">
-                  <Star className="w-5 h-5 text-yellow-400 fill-current animate-pulse" />
-                  {anime.score ? (
-                    <span className="text-yellow-400 font-semibold text-lg">
-                      {parseFloat(anime.score?.toString()).toFixed(1)}
-                    </span>
-                  ) : (
-                    <span className="text-neutral-400">N/A</span>
-                  )}
-                  <span className="text-neutral-400">/10</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  <span>{anime.season ? t(anime.season) : "N/A"}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Tv className="w-4 h-4" />
-                  <span>{t(anime.type)}</span>
-                </div>
-                {anime.totalEpisodes && Number(anime.totalEpisodes) > 0 ? (
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    <span>
-                      {t("episodes")} {Number(anime.totalEpisodes)}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    <span>{t("episodes")} N/A</span>
-                  </div>
-                )}
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    anime.status === "Completed"
-                      ? "bg-green-600/20 text-green-400 border border-green-400/30"
-                      : anime.status === "Ongoing"
-                      ? "bg-blue-600/20 text-blue-400 border border-blue-400/30"
-                      : "bg-yellow-600/20 text-yellow-400 border border-yellow-400/30"
-                  }`}
-                >
-                  {t(anime.status)}
-                </span>
-              </div>
-            </div>
 
-            {/* Additional Info */}
-            {(anime.studios || anime.producers) && (
-              <div className="animate-fade-in-delayed flex flex-col gap-3 text-sm text-neutral-400">
-                {anime.studios && (
-                  <div className="flex gap-2 items-center">
-                    <span className="font-medium text-neutral-300 min-w-fit">{t("studios")}:</span>
-                    <div className="flex flex-wrap gap-2">
-                      {anime.studios.map((studio, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 bg-white/5 rounded-full border border-white/10"
-                        >
-                          {formatText(studio)}
-                        </span>
-                      ))}
-                    </div>
+              {/* Stats Row */}
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 lg:gap-6 text-xs sm:text-sm lg:text-base font-medium text-white/90">
+                <div className="flex items-center gap-1.5 sm:gap-2 text-yellow-400">
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star 
+                        key={star} 
+                        className={cn(
+                          "w-3 h-3 sm:w-4 sm:h-4 fill-current", 
+                          star <= Math.round((parseFloat(anime.score?.toString() || "0") / 2)) ? "text-yellow-400" : "text-white/20"
+                        )} 
+                      />
+                    ))}
                   </div>
-                )}
-                {anime.producers && (
-                  <div className="flex gap-2 items-center">
-                    <span className="font-medium text-neutral-300 min-w-fit">
-                      {t("producers")}:
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {anime.producers.map((producer, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 bg-white/5 rounded-full border border-white/10"
-                        >
-                          {formatText(producer)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Genres */}
-            <div className="animate-fade-in-delayed">
-              <div className="flex flex-wrap gap-2">
-                {anime.genres?.map((genre, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-white/10 backdrop-blur-sm text-white text-sm rounded-full border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all duration-300 cursor-pointer transform hover:scale-105"
-                  >
-                    {genre}
+                  <span className="font-bold text-sm sm:text-lg text-white ml-1">
+                    {anime.score ? parseFloat(anime.score.toString()).toFixed(1) : "N/A"}
                   </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Description */}
-            <div className="animate-fade-in-delayed">
-              <div className="relative">
-                <div
-                  className={`text-neutral-300 text-md leading-relaxed max-w-4xl transition-all duration-300 ${
-                    isExpanded ? "" : "line-clamp-3 overflow-hidden"
-                  }`}
-                >
-                  {formatDescription(anime.description || "")}
                 </div>
-                {anime.description && anime.description.length > 200 && (
-                  <button
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className="text-blue-400 hover:text-blue-300 mt-2 text-sm font-medium transition-colors duration-200 cursor-pointer"
-                  >
-                    {isExpanded ? t("show_less") : t("read_more")}
-                  </button>
-                )}
-              </div>
-            </div>
 
-            {/* Sub/Dub Info */}
-            <div className="animate-fade-in-delayed">
-              <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-neutral-400" />
-                <span className="text-neutral-400">{t("available_in")}</span>
-                <span className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-sm border border-blue-400/30">
-                  {getSubDubText(anime.subOrDub)}
+                <span className="text-white/40 hidden sm:inline">|</span>
+                <span>{anime.year}</span>
+                
+                <span className="text-white/40 hidden sm:inline">|</span>
+                <span className="hidden sm:inline">{anime.season}</span>
+                
+                <span className="text-white/40 hidden md:inline">|</span>
+                <span className="hidden md:inline">{anime.totalEpisodes ? `${anime.totalEpisodes} Episodes` : "? Eps"}</span>
+                
+                <span className={cn(
+                  "px-2 py-0.5 rounded text-[10px] sm:text-xs uppercase tracking-wide",
+                  anime.status?.toLowerCase().includes("ongoing") ? "bg-emerald-500/20 text-emerald-400" : "bg-white/10 text-white/70"
+                )}>
+                  {anime.status}
                 </span>
               </div>
+
+              {/* Genres */}
+              <div className="flex flex-wrap gap-2 text-white/70 text-xs sm:text-sm">
+                <span className="text-white/40">Genres:</span>
+                <span className="font-medium text-white">{anime.genres?.slice(0, 4).join(", ")}</span>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap gap-4 pt-4 animate-fade-in-delayed">
-              <ControlButton type="primary" onClick={handleWatchNow} className="min-w-[200px]">
-                <Play className="w-6 h-6" />
-                <span>{t("watch_now")}</span>
-              </ControlButton>
+              <div className="flex flex-wrap items-center gap-3 py-2">
+              <Button 
+                variant="primary" 
+                size="lg" 
+                  className="rounded-full px-5 sm:px-8 h-10 sm:h-12 text-sm sm:text-base font-bold gap-2 shadow-lg shadow-primary/10"
+                onClick={handleWatchNow}
+              >
+                  <Play className="w-4 h-4 fill-current" />
+                <span>Start Watching</span>
+              </Button>
+              
+              <Button 
+                variant="default" 
+                size="lg" 
+                className={cn(
+                    "rounded-full h-10 sm:h-12 px-4 sm:px-6 gap-2 border-white/20 bg-white/10 hover:bg-white/20 backdrop-blur-sm",
+                    isSaved && "bg-primary text-primary-foreground hover:bg-primary/90"
+                )}
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaved ? (
+                  <>
+                      <Check className="w-4 h-4" />
+                      <span className="hidden sm:inline">Saved</span>
+                  </>
+                ) : (
+                  <>
+                      <Bookmark className="w-4 h-4" />
+                      <span className="hidden sm:inline">Add to list</span>
+                  </>
+                )}
+              </Button>
+            </div>
 
-              <ControlButton type="save" onClick={handleSave}>
-                <Bookmark className="w-5 h-5" />
-                <span>{t("add_to_list")}</span>
-              </ControlButton>
+              {/* Description */}
+            <div className="relative max-w-3xl">
+              <div className={cn(
+                  "text-sm sm:text-base lg:text-lg text-white/80 leading-relaxed font-light transition-all duration-500",
+                  !isExpanded && "max-h-[4.5rem] sm:max-h-[6rem] overflow-hidden"
+              )}>
+                  <p>{anime.description?.replace(/<[^>]*>?/gm, '')}</p>
+              </div>
+              
+                {anime.description && anime.description.length > 150 && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                    className="mt-2 sm:mt-3 text-xs sm:text-sm font-medium text-white/60 hover:text-white flex items-center gap-1 transition-all"
+                >
+                  {isExpanded ? "Show Less" : "Read More"}
+                    <ChevronDown className={cn("w-4 h-4 transition-transform", isExpanded && "rotate-180")} />
+                </button>
+              )}
+            </div>
 
-              <ControlButton type="share" onClick={handleShare}>
-                <Share2 className="w-5 h-5" />
-                <span>{t("share")}</span>
-              </ControlButton>
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

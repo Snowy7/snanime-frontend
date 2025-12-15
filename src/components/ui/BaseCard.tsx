@@ -79,6 +79,7 @@ const BaseCard: React.FC<BaseCardProps> = ({
             src={imageUrl || "/images/default-anime.png"}
             alt={title}
             fill
+            sizes="(max-width: 768px) 128px, 128px"
             className={cn(
               "object-cover transition-transform duration-300",
               hoverEffectClasses[hoverEffect]
@@ -185,6 +186,7 @@ const BaseCard: React.FC<BaseCardProps> = ({
           src={imageUrl || "/images/default-anime.png"}
           alt={title}
           fill
+          sizes="(max-width: 768px) 50vw, 320px"
           className={cn(
             "object-cover transition-transform duration-500",
             hoverEffectClasses[hoverEffect]

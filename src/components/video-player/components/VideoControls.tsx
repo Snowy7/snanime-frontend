@@ -1,8 +1,8 @@
 "use client";
-import React, { useCallback, useMemo, useRef } from 'react';
-import { 
-  Play, Pause, Volume2, VolumeX, Maximize, Minimize, 
-  Settings, SkipBack, SkipForward, Loader2 
+import React, { useCallback, useMemo } from 'react';
+import {
+  Play, Pause, Volume2, VolumeX, Maximize, Minimize,
+  Settings, SkipBack, SkipForward, Loader2
 } from 'lucide-react';
 import { PlayerState } from '../types';
 import { SKIP_SECONDS } from '../constants';
@@ -48,13 +48,13 @@ export const VideoControls: React.FC<VideoControlsProps> = React.memo(({
   const { isPlaying, currentTime, duration, buffered, isLoading, isFullscreen } = playerState;
   const { t } = useLanguage();
 
-  // Memoize formatted times to prevent recalculation
+  // Memoize formatted times
   const formattedCurrentTime = useMemo(() => {
     if (!isFinite(currentTime)) return '0:00';
     const hours = Math.floor(currentTime / 3600);
     const minutes = Math.floor((currentTime % 3600) / 60);
     const seconds = Math.floor(currentTime % 60);
-    
+
     if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
@@ -66,7 +66,7 @@ export const VideoControls: React.FC<VideoControlsProps> = React.memo(({
     const hours = Math.floor(duration / 3600);
     const minutes = Math.floor((duration % 3600) / 60);
     const seconds = Math.floor(duration % 60);
-    
+
     if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
@@ -84,7 +84,23 @@ export const VideoControls: React.FC<VideoControlsProps> = React.memo(({
     return Math.min(100, (buffered / duration) * 100);
   }, [buffered, duration]);
 
-  // Smooth volume change handler
+  // Calculate intro/outro positions on progress bar
+  const introPosition = useMemo(() => {
+    if (!intro || !duration || intro.start < 0 || intro.end <= intro.start) return null;
+    return {
+      start: (intro.start / duration) * 100,
+      width: ((intro.end - intro.start) / duration) * 100,
+    };
+  }, [intro, duration]);
+
+  const outroPosition = useMemo(() => {
+    if (!outro || !duration || outro.start < 0 || outro.end <= outro.start) return null;
+    return {
+      start: (outro.start / duration) * 100,
+      width: ((outro.end - outro.start) / duration) * 100,
+    };
+  }, [outro, duration]);
+
   const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
     onVolumeChange(newVolume);
@@ -92,7 +108,7 @@ export const VideoControls: React.FC<VideoControlsProps> = React.memo(({
 
   const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!duration) return;
-    
+
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percentage = x / rect.width;
@@ -100,7 +116,6 @@ export const VideoControls: React.FC<VideoControlsProps> = React.memo(({
     onSeek(newTime);
   }, [duration, onSeek]);
 
-  // Memoize skip handlers
   const handleSkipBackward = useCallback(() => onSkip(-SKIP_SECONDS), [onSkip]);
   const handleSkipForward = useCallback(() => onSkip(SKIP_SECONDS), [onSkip]);
 
@@ -126,158 +141,155 @@ export const VideoControls: React.FC<VideoControlsProps> = React.memo(({
     return outro && outro.start >= 0 && outro.end > outro.start && currentTime >= outro.start && currentTime <= outro.end;
   }, [outro, currentTime]);
 
-  // Calculate intro/outro positions on progress bar
-  const introPosition = useMemo(() => {
-    if (!intro || !duration) return null;
-    return {
-      start: (intro.start / duration) * 100,
-      width: ((intro.end - intro.start) / duration) * 100,
-    };
-  }, [intro, duration]);
-
-  const outroPosition = useMemo(() => {
-    if (!outro || !duration) return null;
-    return {
-      start: (outro.start / duration) * 100,
-      width: ((outro.end - outro.start) / duration) * 100,
-    };
-  }, [outro, duration]);
-
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent py-2 px-2 md:py-4 md:px-8 transition-opacity duration-300 z-50">
-      {/* Skip Intro/Outro Buttons */}
-      {isInIntro && (
-        <div className="absolute bottom-full right-4 mb-4 z-10">
-          <button
-            onClick={handleSkipIntro}
-            className="bg-white/95 hover:bg-white text-black px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 backdrop-blur-sm shadow-lg"
-          >
-            {t('videoPlayer.skipIntro')}
-          </button>
-        </div>
-      )}
-
-      {isInOutro && (
-        <div className="absolute bottom-full right-4 mb-4 z-10">
-          <button
-            onClick={handleSkipOutro}
-            className="bg-white/95 hover:bg-white text-black px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 backdrop-blur-sm shadow-lg"
-          >
-            {t('videoPlayer.skipOutro')}
-          </button>
-        </div>
-      )}
-
-      {/* Progress Bar */}
-      <div className="mb-2 md:mb-3">
-        <div 
-          className="relative h-1 md:h-1 bg-white/20 rounded-full cursor-pointer group touch-manipulation"
-          onClick={handleProgressClick}
-        >
-          {/* Intro Marker */}
-          {introPosition && (
-            <div 
-              className="absolute h-full bg-yellow-500/60 rounded-full"
-              style={{ 
-                left: `${introPosition.start}%`, 
-                width: `${introPosition.width}%` 
-              }}
-            />
-          )}
-
-          {/* Outro Marker */}
-          {outroPosition && (
-            <div 
-              className="absolute h-full bg-blue-500/60 rounded-full"
-              style={{ 
-                left: `${outroPosition.start}%`, 
-                width: `${outroPosition.width}%` 
-              }}
-            />
-          )}
-
-          {/* Buffered Progress */}
-          <div 
-            className="absolute h-full bg-white/30 rounded-full transition-all duration-200"
-            style={{ width: `${bufferedPercentage}%` }}
-          />
-          
-          {/* Current Progress */}
-          <div 
-            className="absolute h-full bg-red-500 rounded-full group-hover:h-1.5 transition-all duration-200"
-            style={{ width: `${progressPercentage}%` }}
-          >
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+    <div className="absolute bottom-4 left-4 right-4 md:left-8 md:right-8 z-50">
+      <div className="rounded-full bg-black/30 backdrop-blur-md border border-white/10 shadow-md shadow-black/40 p-4">
+        {/* Skip Intro/Outro Buttons */}
+        {isInIntro && (
+          <div className="absolute bottom-full right-2 mb-3 z-10 animate-in fade-in slide-in-from-bottom-2">
+            <button
+              onClick={handleSkipIntro}
+              className="bg-white hover:bg-white/90 text-black px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 shadow-xl shadow-black/20 flex items-center gap-2"
+            >
+              <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+              Skip Intro
+            </button>
           </div>
-        </div>
-        
-        {/* Time Display */}
-        <div className="flex justify-between text-xs md:text-sm text-white/70 mt-1">
-          <span>{formattedCurrentTime}</span>
-          <span>{formattedDuration}</span>
-        </div>
-      </div>
+        )}
 
-      {/* Control Buttons */}
-      <div className="flex items-center justify-between">
-        {/* Left Side Controls */}
-        <div className="flex items-center gap-1 md:gap-2">
-          {/* Previous Episode (Mobile & Desktop) */}
-          {hasPrevious && onPrevious && (
+        {isInOutro && (
+          <div className="absolute bottom-full right-2 mb-3 z-10 animate-in fade-in slide-in-from-bottom-2">
             <button
-              onClick={onPrevious}
-              className="p-1.5 md:p-2 hover:bg-white/10 rounded-lg transition-colors duration-200 touch-manipulation"
+              onClick={handleSkipOutro}
+              className="bg-white hover:bg-white/90 text-black px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 shadow-xl shadow-black/20 flex items-center gap-2"
             >
-              <SkipBack className="w-4 h-4 md:w-5 md:h-5 text-white" />
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+              Skip Outro
             </button>
-          )}
+          </div>
+        )}
 
-          {/* Skip Backward */}
-          <button
-            onClick={handleSkipBackward}
-            className="p-1.5 md:p-2 hover:bg-white/10 rounded-lg transition-colors duration-200 touch-manipulation"
-          >
-            <SkipBack className="w-4 h-4 md:w-5 md:h-5 text-white" />
-          </button>
-
-          {/* Play/Pause */}
-          <button
-            onClick={onPlayPause}
-            className="p-2 md:p-3 hover:bg-white/10 rounded-lg transition-colors duration-200 touch-manipulation"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 md:w-6 md:h-6 text-white animate-spin" />
-            ) : isPlaying ? (
-              <Pause className="w-5 h-5 md:w-6 md:h-6 text-white" />
-            ) : (
-              <Play className="w-5 h-5 md:w-6 md:h-6 text-white" />
-            )}
-          </button>
-
-          {/* Skip Forward */}
-          <button
-            onClick={handleSkipForward}
-            className="p-1.5 md:p-2 hover:bg-white/10 rounded-lg transition-colors duration-200 touch-manipulation"
-          >
-            <SkipForward className="w-4 h-4 md:w-5 md:h-5 text-white" />
-          </button>
-
-          {/* Next Episode (Mobile & Desktop) */}
-          {hasNext && onNext && (
+        {/* Control Buttons */}
+        <div className="flex items-center justify-between">
+          {/* Left Side Controls */}
+          <div className="flex items-center gap-2">
+            {/* Play/Pause */}
             <button
-              onClick={onNext}
-              className="p-1.5 md:p-2 hover:bg-white/10 rounded-lg transition-colors duration-200 touch-manipulation"
+              onClick={onPlayPause}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              disabled={isLoading}
             >
-              <SkipForward className="w-4 h-4 md:w-5 md:h-5 text-white" />
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 text-white animate-spin" />
+              ) : isPlaying ? (
+                <Pause className="w-5 h-5 text-white" />
+              ) : (
+                <Play className="w-5 h-5 text-white fill-white" />
+              )}
             </button>
-          )}
 
-          {/* Volume Controls (Desktop Only) */}
-          <div className="hidden md:flex items-center gap-2 ml-2">
+            {/* Volume Controls */}
+            <div className="hidden md:flex items-center gap-1 ml-2">
+              <button
+                onClick={onMute}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                {isMuted ? (
+                  <VolumeX className="w-5 h-5 text-white" />
+                ) : (
+                  <Volume2 className="w-5 h-5 text-white" />
+                )}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={isMuted ? 0 : volume}
+                onChange={handleVolumeChange}
+                className="w-20 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-primary"
+                style={{
+                  background: `linear-gradient(to right, var(--color-primary) ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.2) ${(isMuted ? 0 : volume) * 100}%)`
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full mx-auto max-w-[70%] relative top-2">
+            <div
+              className="relative h-1.5 bg-white/10 rounded-full cursor-pointer group overflow-hidden"
+              onClick={handleProgressClick}
+            >
+              {/* Intro Marker */}
+              {introPosition && (
+                <div
+                  className="absolute h-full bg-yellow-500/40 border-l border-r border-yellow-500/60 z-10"
+                  style={{
+                    left: `${introPosition.start}%`,
+                    width: `${introPosition.width}%`
+                  }}
+                  title="Intro"
+                />
+              )}
+
+              {/* Outro Marker */}
+              {outroPosition && (
+                <div
+                  className="absolute h-full bg-blue-500/40 border-l border-r border-blue-500/60 z-10"
+                  style={{
+                    left: `${outroPosition.start}%`,
+                    width: `${outroPosition.width}%`
+                  }}
+                  title="Outro"
+                />
+              )}
+
+              {/* Buffered Progress */}
+              <div
+                className="absolute h-full bg-white/20 rounded-full transition-all duration-200 z-0"
+                style={{ width: `${bufferedPercentage}%` }}
+              />
+
+              {/* Current Progress */}
+              <div
+                className="absolute h-full bg-primary rounded-full transition-all z-20"
+                style={{ width: `${progressPercentage}%` }}
+              >
+                {/* Glow effect at tip */}
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-primary blur-md" />
+              </div>
+            </div>
+
+            {/* Time Display */}
+            <div className="flex justify-between text-[11px] font-medium text-white/50 mt-2 px-0.5">
+              <span>{formattedCurrentTime}</span>
+              <span>{formattedDuration}</span>
+            </div>
+          </div>
+
+          {/* Right Side Controls */}
+          <div className="flex items-center gap-1">
+            {/* Skip Back */}
+            <button
+              onClick={handleSkipBackward}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors hidden sm:flex"
+            >
+              <SkipBack className="w-5 h-5 text-white" />
+            </button>
+
+            {/* Skip Forward */}
+            <button
+              onClick={handleSkipForward}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors hidden sm:flex"
+            >
+              <SkipForward className="w-5 h-5 text-white" />
+            </button>
+
+            {/* Mobile Volume */}
             <button
               onClick={onMute}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors duration-200"
+              className="md:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
             >
               {isMuted ? (
                 <VolumeX className="w-5 h-5 text-white" />
@@ -285,55 +297,31 @@ export const VideoControls: React.FC<VideoControlsProps> = React.memo(({
                 <Volume2 className="w-5 h-5 text-white" />
               )}
             </button>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={isMuted ? 0 : volume}
-              onChange={handleVolumeChange}
-              className="w-16 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
-            />
+
+            {/* Settings */}
+            <button
+              onClick={onSettingsClick}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <Settings className="w-5 h-5 text-white" />
+            </button>
+
+            {/* Fullscreen */}
+            <button
+              onClick={onFullscreen}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              {isFullscreen ? (
+                <Minimize className="w-5 h-5 text-white" />
+              ) : (
+                <Maximize className="w-5 h-5 text-white" />
+              )}
+            </button>
           </div>
-        </div>
-
-        {/* Right Side Controls */}
-        <div className="flex items-center gap-1 md:gap-2">
-          {/* Volume Controls (Mobile Only) */}
-          <button
-            onClick={onMute}
-            className="md:hidden p-1.5 hover:bg-white/10 rounded-lg transition-colors duration-200 touch-manipulation"
-          >
-            {isMuted ? (
-              <VolumeX className="w-4 h-4 text-white" />
-            ) : (
-              <Volume2 className="w-4 h-4 text-white" />
-            )}
-          </button>
-
-          {/* Settings */}
-          <button
-            onClick={onSettingsClick}
-            className="p-1.5 md:p-2 hover:bg-white/10 rounded-lg transition-colors duration-200 touch-manipulation"
-          >
-            <Settings className="w-4 h-4 md:w-5 md:h-5 text-white" />
-          </button>
-
-          {/* Fullscreen */}
-          <button
-            onClick={onFullscreen}
-            className="p-1.5 md:p-2 hover:bg-white/10 rounded-lg transition-colors duration-200 touch-manipulation"
-          >
-            {isFullscreen ? (
-              <Minimize className="w-4 h-4 md:w-5 md:h-5 text-white" />
-            ) : (
-              <Maximize className="w-4 h-4 md:w-5 md:h-5 text-white" />
-            )}
-          </button>
         </div>
       </div>
     </div>
   );
 });
 
-VideoControls.displayName = 'VideoControls'; 
+VideoControls.displayName = 'VideoControls';

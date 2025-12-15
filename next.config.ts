@@ -21,7 +21,11 @@ const nextConfig: NextConfig = {
       "img.anslayer.com",
       "animeowl.me",
       "app.sanime.net",
-      "witanime.pics"
+      "witanime.pics",
+      "static.anikai.to",
+      "witanime.red",
+      "cdn.animenewsnetwork.com",
+      "*"
     ]
   }
 };

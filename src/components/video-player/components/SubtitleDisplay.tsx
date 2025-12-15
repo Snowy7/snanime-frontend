@@ -55,19 +55,12 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
       try {
         console.log('Loading subtitles from:', selectedSubtitle.url);
         
-        // Try to fetch subtitles with CORS handling
-        let response;
-        try {
-          response = await fetch(selectedSubtitle.url, {
-            mode: 'cors',
-            credentials: 'omit'
-          });
-        } catch (corsError) {
-          console.warn('CORS error, trying with proxy:', corsError);
-          // If CORS fails, try through a proxy
-          const proxyUrl = `/api/proxy/subtitle?url=${encodeURIComponent(selectedSubtitle.url)}`;
-          response = await fetch(proxyUrl);
-        }
+        // Use the backend proxy to avoid CORS issues with subtitle files
+        // The proxy handles Referer/Origin headers automatically
+        const apiBase = process.env.NEXT_PUBLIC_SNANIME_API_URL || 'http://localhost:5000/api/v1';
+        const proxyUrl = `${apiBase}/proxy/stream?url=${encodeURIComponent(selectedSubtitle.url)}&headers=${encodeURIComponent('{}')}`;
+        
+        const response = await fetch(proxyUrl);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

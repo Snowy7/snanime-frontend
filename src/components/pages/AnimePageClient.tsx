@@ -1,13 +1,10 @@
 "use client";
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect } from "react";
 import AnimeDetails from "@/components/anime/AnimeDetails";
 import RelatedAnime from "@/components/anime/RelatedAnime";
 import EpisodeList from "@/components/anime/EpisodeList";
 import { useAnime } from "@/context/AnimeContext";
-import RelatedCharacters from "@/components/anime/RelatedCharacters";
-import RelatedStaff from "@/components/anime/RelatedStaff";
 import Loading from "@/components/Loading";
-import RecommendedAnime from "@/components/anime/RecommendedAnime";
 import { IAnime } from "@/types/anime";
 import { Button } from "../ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -28,8 +25,6 @@ export default function AnimePageClient({ anime }: AnimePageProps) {
   const { language } = useLanguage();
 
   useEffect(() => {
-    console.log("language", language);
-    console.log("animeData", animeData);
     const fetchAnilistData = async () => {
       if (!animeData?.malId) return;
       try {
@@ -46,8 +41,6 @@ export default function AnimePageClient({ anime }: AnimePageProps) {
             posterUrl: anilistAnime.posterUrl || animeData.posterUrl,
             totalEpisodes: (animeData.totalEpisodes > 0 ? animeData.totalEpisodes : (animeData.episodes?.length ?? 0 > 0 ? animeData.episodes?.length : anilistAnime.totalEpisodes ?? 0)) ?? 0
           };
-
-          console.log("mergedAnime", mergedAnime);
 
           // Set the anime data state
           setAnimeData(mergedAnime);
@@ -88,16 +81,24 @@ export default function AnimePageClient({ anime }: AnimePageProps) {
   }
 
   return (
-    <div className="h-screen w-full bg-black">
+    <div className="min-h-screen w-full bg-black">
       <AnimeDetails anime={animeData} />
-      <div className="px-4 md:px-8 lg:px-16  container mx-auto relative z-10">
-        {animeData?.relatedAnime && animeData?.relatedAnime.length > 0 && <RelatedAnime relatedAnime={animeData.relatedAnime} />}
-        {/* {animeData?.recommendations && animeData?.recommendations.length > 0 && <RecommendedAnime recommendations={animeData.recommendations} />} */}
-        {/* {anilistAnime?.characters && anilistAnime?.characters.length > 0 && <RelatedCharacters characters={anilistAnime.characters} />} */}
-        {/* {anilistAnime?.staff && anilistAnime?.staff.length > 0 && <RelatedStaff staff={anilistAnime.staff} />} */}
-        {
-          animeData?.episodes && animeData?.episodes.length > 0 && <EpisodeList episodes={animeData.episodes} animeTitle={animeData.title} animeId={animeData.id} animeDescription={animeData.description} />
-        }
+      <div className="px-4 md:px-8 lg:px-16 container mx-auto relative z-10 pb-16">
+        {/* Episodes Section - First */}
+        {animeData?.episodes && animeData?.episodes.length > 0 && (
+          <EpisodeList 
+            episodes={animeData.episodes} 
+            animeTitle={animeData.title} 
+            animeId={animeData.id} 
+            animeDescription={animeData.description}
+            animePoster={animeData.posterUrl}
+          />
+        )}
+        
+        {/* Related Anime Section - After Episodes */}
+        {animeData?.relatedAnime && animeData?.relatedAnime.length > 0 && (
+          <RelatedAnime relatedAnime={animeData.relatedAnime} />
+        )}
       </div>
     </div>
   );
