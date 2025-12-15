@@ -239,7 +239,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [streams.sources, sourcePriority.currentSourceType]);
 
   // HLS Hook
-  const { isLoading: hlsLoading, retryCount } = useHls({
+  const { isLoading: hlsLoading } = useHls({
     videoRef,
     source: currentSource,
     headers: streams.headers,
@@ -580,9 +580,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           <div className="text-center">
             <Loader2 className="w-12 h-12 text-white animate-spin mx-auto mb-4" />
             <p className="text-white text-sm">{t('videoPlayer.loading')}</p>
-            {retryCount > 0 && (
-              <p className="text-white/60 text-xs mt-1">{t('videoPlayer.loadingWithRetry', { count: retryCount })}</p>
-            )}
           </div>
         </div>
       )}

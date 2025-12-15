@@ -22,7 +22,7 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSidebar, setShowSidebar] = useState(false);
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const { language, t } = useLanguage();
 
@@ -45,7 +45,7 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
   // Filter episodes based on search query
   const filteredEpisodes = useMemo(() => {
     if (!searchQuery.trim()) return episodeDetails.allEpisodes;
-    
+
     const query = searchQuery.toLowerCase();
     return episodeDetails.allEpisodes.filter(
       (episode) =>
@@ -78,9 +78,9 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
     <div className="min-h-screen bg-background font-sans container mx-auto" dir="ltr">
       <div className="pt-24 pb-12">
         <div className="max-w-[1920px] mx-auto px-6 lg:px-10">
-          
+
           {/* Back Link */}
-          <Link 
+          <Link
             href={`/anime/${episodeDetails.animeId}`}
             className="inline-flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm mb-6"
           >
@@ -107,7 +107,7 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
 
           {/* Info & Navigation Section */}
           <div className="grid lg:grid-cols-[1fr_400px] gap-12 items-end mb-16">
-            
+
             {/* Left: Info */}
             <div className="space-y-6">
               <div>
@@ -122,7 +122,7 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
               <div className="flex items-center gap-6 text-sm text-white/50">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  <span>{episodeDetails.allEpisodes[currentEpisodeIndex].releaseDate || "Unknown Date"}</span>
+                  <span>{"Unknown Date"}</span>
                 </div>
                 <div className="w-1 h-1 rounded-full bg-white/30" />
                 <span>HD</span>
@@ -143,20 +143,19 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
                 <span>Navigation</span>
                 <span>{currentEpisodeIndex + 1} / {episodeDetails.allEpisodes.length}</span>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 {/* Previous Button */}
                 <button
                   onClick={handlePrevious}
                   disabled={!hasPrevious}
-                  className={`group relative h-24 rounded-xl overflow-hidden border border-white/10 text-left transition-all ${
-                    hasPrevious ? 'hover:border-white/30 hover:shadow-lg' : 'opacity-30 cursor-not-allowed'
-                  }`}
+                  className={`group relative h-24 rounded-xl overflow-hidden border border-white/10 text-left transition-all ${hasPrevious ? 'hover:border-white/30 hover:shadow-lg' : 'opacity-30 cursor-not-allowed'
+                    }`}
                 >
                   <div className="absolute inset-0 bg-neutral-900">
                     {previousEpisode && (
                       <Image
-                        src={previousEpisode.thumbnail || posterUrl || ''}
+                        src={posterUrl || ''}
                         alt="Prev"
                         fill
                         className="object-cover opacity-40 group-hover:opacity-60 transition-opacity"
@@ -164,7 +163,7 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
                     )}
                     <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
                   </div>
-                  
+
                   <div className="absolute inset-0 p-4 flex flex-col justify-center">
                     <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-1 group-hover:text-primary transition-colors">Previous</span>
                     <span className="text-sm text-white font-bold truncate">
@@ -183,14 +182,13 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
                 <button
                   onClick={handleNext}
                   disabled={!hasNext}
-                  className={`group relative h-24 rounded-xl overflow-hidden border border-white/10 text-right transition-all ${
-                    hasNext ? 'hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5' : 'opacity-30 cursor-not-allowed'
-                  }`}
+                  className={`group relative h-24 rounded-xl overflow-hidden border border-white/10 text-right transition-all ${hasNext ? 'hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5' : 'opacity-30 cursor-not-allowed'
+                    }`}
                 >
                   <div className="absolute inset-0 bg-neutral-900">
                     {nextEpisode && (
                       <Image
-                        src={nextEpisode.thumbnail || posterUrl || ''}
+                        src={posterUrl || ''}
                         alt="Next"
                         fill
                         className="object-cover opacity-40 group-hover:opacity-60 transition-opacity"
@@ -198,7 +196,7 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
                     )}
                     <div className="absolute inset-0 bg-gradient-to-l from-black/90 via-black/60 to-transparent" />
                   </div>
-                  
+
                   <div className="absolute inset-0 p-4 flex flex-col justify-center items-end">
                     <span className="text-[10px] text-primary font-bold uppercase tracking-wider mb-1">Up Next</span>
                     <span className="text-sm text-white font-bold truncate w-full">
