@@ -19,8 +19,8 @@ const LatestEpisodes: React.FC<GridSectionProps> = ({ title, shows, onViewAllCli
     <section className={`py-10 ${className}`}>
       <SectionTitle title={title} onViewAllClick={onViewAllClick} />
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {shows.map((show) => (
-          <LatestEpisodeCard key={show.id} episode={show} />
+        {shows.map((show, index) => (
+          <LatestEpisodeCard key={`${show.id}-${index}`} episode={show} />
         ))}
       </div>
     </section>

@@ -95,6 +95,7 @@ export interface ISnAnimeLatest {
   season: string;
   year: string;
   totalEpisodes: number;
+  latestEpisode?: number; // The most recently released episode number
 }
 
 /**
@@ -111,6 +112,9 @@ export interface ISnAnimeSpotlight {
   duration: string;
   year: number;
   totalEpisodes: number;
+  genres?: string[];
+  averageScore?: number;
+  color?: string;
 }
 
 /**
@@ -142,12 +146,20 @@ export interface ISnAnimeEpisodeDetails {
       url: string;        // URL to the video stream
       isM3U8: boolean;    // Indicates if it's an HLS stream
       type: string;       // Stream type (e.g., "hls", "mp4")
+      quality?: string;   // Quality (e.g., "1080p", "720p")
+      server?: string;    // Server name
+      provider?: string;  // Provider name (e.g., "hianime", "animekai")
+      subtitles?: Array<{ // Subtitles specific to this source
+        url: string;
+        lang: string;
+      }>;
     }>;
   };
   allEpisodes: Array<{    // List of all episodes
     id: string;
     number: number;
     title: string;
+    thumbnail?: string;
   }>;
 }
 

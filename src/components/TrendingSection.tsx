@@ -19,7 +19,7 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({ title, animes }) => {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold text-white/90 italic">{title}</h2>
         <Link 
-          href="/browse" 
+          href="/trending" 
           className="flex items-center gap-1 px-4 py-2 rounded-full border border-white/10 text-sm text-white/60 hover:text-white hover:border-white/20 transition-colors"
         >
           See All
@@ -29,8 +29,8 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({ title, animes }) => {
 
       {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {animes.map((anime) => (
-          <TrendingCard key={anime.id} anime={anime} />
+        {animes.map((anime, index) => (
+          <TrendingCard key={`${anime.id}-${index}`} anime={anime} />
         ))}
       </div>
     </section>

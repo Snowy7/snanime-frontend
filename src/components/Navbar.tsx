@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bookmark, Menu, Search, User, X, LogOut, Settings, Globe } from "lucide-react";
+import { Bookmark, Menu, User, X, LogOut, Settings, Globe, Heart, History, TrendingUp, Clock } from "lucide-react";
 import { Button } from "./ui/button";
 import { useLanguage } from "@/context/LanguageContext";
 import SearchDropdown from "./SearchDropdown";
@@ -24,7 +24,7 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const { t, getDirection, language, setLanguage } = useLanguage();
-  const { user, logout } = useAuth();
+  const { user, isAuthenticated, signIn, signUp, signOut } = useAuth();
   const isRTL = getDirection() === "rtl";
 
   useEffect(() => {
@@ -47,8 +47,9 @@ const Navbar = () => {
 
   const navLinks = [
     { href: "/", label: t("home") },
-    { href: "/browse", label: "Anime" }, // Direct link as per design
-    { href: "/news", label: t("news") },
+    { href: "/browse", label: "Anime" },
+    { href: "/trending", label: "Trending" },
+    { href: "/latest", label: "Latest" },
   ];
 
   return (
@@ -126,12 +127,12 @@ const Navbar = () => {
 
             <div className="h-4 w-px bg-white/10 hidden sm:block" />
 
-            {user ? (
+            {isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 border border-white/10 bg-white/5 overflow-hidden">
-                    {user.avatar ? (
-                      <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+                    {user.profileImageUrl ? (
+                      <img src={user.profileImageUrl} alt={user.displayName || "User"} className="w-full h-full object-cover" />
                     ) : (
                       <User size={18} />
                     )}
@@ -140,41 +141,77 @@ const Navbar = () => {
                 <DropdownMenuContent align="end" className="w-56 bg-black/90 border-white/10 backdrop-blur-xl text-white mt-2">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.username}</p>
+                      <p className="text-sm font-medium leading-none">{user.displayName || "User"}</p>
                       <p className="text-xs leading-none text-white/50">{user.email}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem className="focus:bg-white/10 focus:text-white cursor-pointer" asChild>
-                    <Link href="/saves" className="flex items-center w-full">
-                      <Bookmark className="mr-2 h-4 w-4" />
-                      <span>My List</span>
+                    <Link href="/profile" className="flex items-center w-full">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="focus:bg-white/10 focus:text-white cursor-pointer">
+                  <DropdownMenuItem className="focus:bg-white/10 focus:text-white cursor-pointer" asChild>
+                    <Link href="/watchlist" className="flex items-center w-full">
+                      <Bookmark className="mr-2 h-4 w-4" />
+                      <span>Watchlist</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="focus:bg-white/10 focus:text-white cursor-pointer" asChild>
+                    <Link href="/favorites" className="flex items-center w-full">
+                      <Heart className="mr-2 h-4 w-4" />
+                      <span>Favorites</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="focus:bg-white/10 focus:text-white cursor-pointer" asChild>
+                    <Link href="/history" className="flex items-center w-full">
+                      <History className="mr-2 h-4 w-4" />
+                      <span>Watch History</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem className="focus:bg-white/10 focus:text-white cursor-pointer" asChild>
+                    <Link href="/profile/settings" className="flex items-center w-full">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem 
-                    className="focus:bg-primary/20 focus:text-primary text-primary cursor-pointer"
-                    onSelect={() => logout()}
+                    className="focus:bg-red-500/20 focus:text-red-400 text-red-400 cursor-pointer"
+                    onSelect={() => signOut()}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
+                    <span>Sign out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <div className="flex items-center gap-2">
-                <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex text-white/70 hover:text-white hover:bg-white/5">
-                  <Link href="/login">Login</Link>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hidden sm:inline-flex text-white/70 hover:text-white hover:bg-white/5"
+                  onClick={() => signIn()}
+                >
+                  Sign In
                 </Button>
-                <Button asChild variant="primary" size="sm" className="hidden sm:inline-flex rounded-full px-5 h-8 text-xs font-bold bg-white text-black hover:bg-white/90 shadow-none border-none">
-                  <Link href="/signup">Sign Up</Link>
+                <Button 
+                  variant="primary" 
+                  size="sm" 
+                  className="hidden sm:inline-flex rounded-full px-5 h-8 text-xs font-bold bg-white text-black hover:bg-white/90 shadow-none border-none"
+                  onClick={() => signUp()}
+                >
+                  Get Started
                 </Button>
-                <Button asChild variant="ghost" size="icon" className="sm:hidden rounded-full w-8 h-8">
-                  <Link href="/login"><User size={18} /></Link>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="sm:hidden rounded-full w-8 h-8"
+                  onClick={() => signIn()}
+                >
+                  <User size={18} />
                 </Button>
               </div>
             )}
@@ -201,13 +238,33 @@ const Navbar = () => {
                       {link.label}
                   </Link>
             ))}
-            {!user && (
-              <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/5">
-                <Button asChild variant="outline" className="w-full">
-                  <Link href="/login" onClick={handleNavLinkClick}>Login</Link>
-                </Button>
-                <Button asChild variant="primary" className="w-full">
-                  <Link href="/signup" onClick={handleNavLinkClick}>Sign Up</Link>
+            
+            {isAuthenticated && user && (
+              <>
+                <div className="h-px bg-white/10 my-2" />
+                <Link href="/watchlist" onClick={handleNavLinkClick} className="px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-3">
+                  <Bookmark size={18} /> Watchlist
+                </Link>
+                <Link href="/favorites" onClick={handleNavLinkClick} className="px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-3">
+                  <Heart size={18} /> Favorites
+                </Link>
+                <Link href="/history" onClick={handleNavLinkClick} className="px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-3">
+                  <History size={18} /> Watch History
+                </Link>
+                <Link href="/profile" onClick={handleNavLinkClick} className="px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-3">
+                  <User size={18} /> Profile
+                </Link>
+              </>
+            )}
+            
+            {!isAuthenticated && (
+              <div className="mt-4 pt-4 border-t border-white/5">
+                <Button 
+                  variant="primary" 
+                  className="w-full"
+                  onClick={() => { handleNavLinkClick(); signIn(); }}
+                >
+                  Sign In with Google
                 </Button>
               </div>
         )}

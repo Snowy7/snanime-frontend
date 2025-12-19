@@ -27,12 +27,6 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
 
   // Load subtitle file
   useEffect(() => {
-    console.log('Subtitle loading effect triggered:', {
-      subtitlesLength: subtitles.length,
-      selectedLang: settings.selectedSubtitleLang,
-      subtitles: subtitles.map(s => ({ lang: s.lang, url: s.url }))
-    });
-    
     if (!subtitles.length || !settings.selectedSubtitleLang || settings.selectedSubtitleLang === 'off') {
       setSubtitleCues([]);
       setCurrentSubtitle('');
@@ -43,8 +37,6 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
       sub.lang.toLowerCase() === settings.selectedSubtitleLang.toLowerCase()
     );
 
-    console.log('Selected subtitle:', selectedSubtitle);
-
     if (!selectedSubtitle || selectedSubtitle.url === loadedSubtitleRef.current) {
       return;
     }
@@ -53,12 +45,8 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
 
     const loadSubtitles = async () => {
       try {
-        console.log('Loading subtitles from:', selectedSubtitle.url);
-        
-        // Use the backend proxy to avoid CORS issues with subtitle files
-        // The proxy handles Referer/Origin headers automatically
-        const apiBase = process.env.NEXT_PUBLIC_SNANIME_API_URL || 'http://localhost:5000/api/v1';
-        const proxyUrl = `${apiBase}/proxy/stream?url=${encodeURIComponent(selectedSubtitle.url)}&headers=${encodeURIComponent('{}')}`;
+        const apiBase = process.env.NEXT_PUBLIC_SNANIME_API_URL || 'http://localhost:3000';
+        const proxyUrl = `${apiBase}/proxy/subtitle?url=${encodeURIComponent(selectedSubtitle.url)}`;
         
         const response = await fetch(proxyUrl);
         
@@ -67,13 +55,9 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
         }
         
         const text = await response.text();
-        console.log('Subtitle content length:', text.length);
         
-        // Determine format based on file extension or content
         const isASS = selectedSubtitle.url.includes('.ass') || text.includes('[Script Info]');
         const isVTT = selectedSubtitle.url.includes('.vtt') || text.includes('WEBVTT');
-        
-        console.log('Subtitle format detected:', { isASS, isVTT, url: selectedSubtitle.url });
         
         let cues: SubtitleCue[] = [];
         if (isASS) {
@@ -81,14 +65,9 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
         } else if (isVTT) {
           cues = parseVTT(text);
         } else {
-          // Try to parse as SRT format as fallback
           cues = parseSRT(text);
         }
         
-        console.log('Parsed subtitle cues:', cues.length);
-        if (cues.length > 0) {
-          console.log('Sample cue:', cues[0]);
-        }
         setSubtitleCues(cues);
       } catch (error) {
         console.error('Error loading subtitles:', error);
@@ -110,20 +89,8 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
       currentTime >= cue.start && currentTime <= cue.end
     );
 
-    const newSubtitle = currentCue?.text || '';
-    
-    // Debug logging for subtitle timing (only log when subtitle changes)
-    if (newSubtitle !== currentSubtitle) {
-      console.log('Subtitle changed:', {
-        currentTime,
-        newSubtitle,
-        currentCue,
-        totalCues: subtitleCues.length
-      });
-    }
-
-    setCurrentSubtitle(newSubtitle);
-  }, [currentTime, subtitleCues, currentSubtitle]);
+    setCurrentSubtitle(currentCue?.text || '');
+  }, [currentTime, subtitleCues]);
 
   // Parse VTT subtitle format
   const parseVTT = (vttText: string): SubtitleCue[] => {
@@ -131,7 +98,6 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
     const cues: SubtitleCue[] = [];
     let i = 0;
 
-    // Skip header
     while (i < lines.length && !lines[i].includes('-->')) {
       i++;
     }
@@ -146,7 +112,6 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
         i++;
         let text = '';
         
-        // Collect subtitle text (can be multiple lines)
         while (i < lines.length && lines[i].trim() !== '') {
           if (text) text += '\n';
           text += lines[i].trim();
@@ -172,14 +137,12 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
     const lines = assText.split('\n');
     const cues: SubtitleCue[] = [];
     
-    // Find the [Events] section
     let eventsStartIndex = -1;
     let formatLine = '';
     
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].trim() === '[Events]') {
         eventsStartIndex = i;
-        // Look for the Format line
         for (let j = i + 1; j < lines.length && j < i + 10; j++) {
           if (lines[j].startsWith('Format:')) {
             formatLine = lines[j];
@@ -191,22 +154,18 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
     }
     
     if (eventsStartIndex === -1) {
-      console.warn('No [Events] section found in ASS file');
       return cues;
     }
     
-    // Parse the format to find column indices
     const formatParts = formatLine.replace('Format:', '').split(',').map(s => s.trim());
     const startIndex = formatParts.indexOf('Start');
     const endIndex = formatParts.indexOf('End');
     const textIndex = formatParts.indexOf('Text');
     
     if (startIndex === -1 || endIndex === -1 || textIndex === -1) {
-      console.warn('Invalid ASS format line');
       return cues;
     }
     
-    // Parse dialogue lines
     for (let i = eventsStartIndex + 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (line.startsWith('Dialogue:')) {
@@ -215,8 +174,6 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
         if (parts.length > Math.max(startIndex, endIndex, textIndex)) {
           const startTime = parseASSTime(parts[startIndex].trim());
           const endTime = parseASSTime(parts[endIndex].trim());
-          
-          // Text might contain commas, so join from textIndex onwards
           const text = parts.slice(textIndex).join(',').trim();
           
           if (startTime !== -1 && endTime !== -1 && text) {
@@ -240,14 +197,12 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
     let i = 0;
 
     while (i < lines.length) {
-      // Skip empty lines and subtitle numbers
       while (i < lines.length && (!lines[i].trim() || /^\d+$/.test(lines[i].trim()))) {
         i++;
       }
       
       if (i >= lines.length) break;
       
-      // Parse time line
       const timeLine = lines[i];
       if (timeLine && timeLine.includes('-->')) {
         const [startTime, endTime] = timeLine.split(' --> ');
@@ -257,7 +212,6 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
         i++;
         let text = '';
         
-        // Collect subtitle text (can be multiple lines)
         while (i < lines.length && lines[i].trim() !== '') {
           if (text) text += '\n';
           text += lines[i].trim();
@@ -279,7 +233,6 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
     return cues;
   };
 
-  // Parse ASS time format (H:MM:SS.cc)
   const parseASSTime = (timeStr: string): number => {
     const match = timeStr.match(/(\d+):(\d{2}):(\d{2})\.(\d{2})/);
     if (!match) return -1;
@@ -293,7 +246,6 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
     );
   };
 
-  // Parse SRT time format (HH:MM:SS,mmm)
   const parseSRTTime = (timeStr: string): number => {
     const match = timeStr.match(/(\d{2}):(\d{2}):(\d{2}),(\d{3})/);
     if (!match) return -1;
@@ -307,11 +259,9 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
     );
   };
 
-  // Parse time string (00:00:00.000 or 00:00.000)
   const parseTimeString = (timeStr: string): number => {
     const parts = timeStr.split(':');
     if (parts.length === 3) {
-      // HH:MM:SS.mmm
       const [hours, minutes, seconds] = parts;
       return (
         parseInt(hours) * 3600 +
@@ -319,27 +269,21 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
         parseFloat(seconds)
       );
     } else if (parts.length === 2) {
-      // MM:SS.mmm
       const [minutes, seconds] = parts;
       return parseInt(minutes) * 60 + parseFloat(seconds);
     }
     return 0;
   };
 
-  // Clean subtitle text (remove HTML tags, ASS formatting, etc.)
   const cleanSubtitleText = (text: string): string => {
     return text
-      // Remove ASS formatting tags like {\tag} or {\tag value}
       .replace(/\{[^}]*\}/g, '')
-      // Remove HTML tags
       .replace(/<[^>]*>/g, '')
-      // Handle common HTML entities
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&amp;/g, '&')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
-      // Remove any remaining backslash-N (ASS line break)
       .replace(/\\N/g, '\n')
       .replace(/\\n/g, '\n')
       .trim();
@@ -349,29 +293,40 @@ export const SubtitleDisplay: React.FC<SubtitleDisplayProps> = ({
     return null;
   }
 
-  const subtitleStyle: React.CSSProperties = {
-    position: 'absolute',
-    bottom: `${100 - settings.subtitleVerticalPosition}%`,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    fontSize: `${settings.subtitleFontSize}px`,
-    color: settings.subtitleColor,
-    backgroundColor: `${settings.subtitleBackgroundColor}${Math.round(settings.subtitleBackgroundOpacity * 255).toString(16).padStart(2, '0')}`,
-    padding: '4px 8px',
-    borderRadius: '4px',
-    textAlign: 'center',
-    maxWidth: '80%',
-    lineHeight: '1.4',
-    fontFamily: 'Arial, sans-serif',
-    fontWeight: 'bold',
-    textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
-    whiteSpace: 'pre-line',
-    zIndex: 5,
-  };
+  // Split text into lines for multi-line support
+  const lines = currentSubtitle.split('\n');
 
   return (
-    <div style={subtitleStyle}>
-      {currentSubtitle}
+    <div className="absolute bottom-[12%] left-0 right-0 flex flex-col items-center pointer-events-none z-10 px-4">
+      <div className="flex flex-col items-center gap-1">
+        {lines.map((line, index) => (
+          <span
+            key={index}
+            className="inline-block px-3 py-1.5 rounded-md text-center"
+            style={{
+              // Netflix-style subtitles
+              fontSize: `clamp(16px, ${settings.subtitleFontSize}px, 32px)`,
+              fontFamily: '"Netflix Sans", "Helvetica Neue", Helvetica, Arial, sans-serif',
+              fontWeight: 700,
+              color: settings.subtitleColor,
+              backgroundColor: 'rgba(0, 0, 0, 0.75)',
+              textShadow: `
+                2px 2px 4px rgba(0, 0, 0, 0.9),
+                -1px -1px 2px rgba(0, 0, 0, 0.9),
+                1px -1px 2px rgba(0, 0, 0, 0.9),
+                -1px 1px 2px rgba(0, 0, 0, 0.9),
+                0 0 8px rgba(0, 0, 0, 0.5)
+              `,
+              letterSpacing: '0.03em',
+              lineHeight: 1.4,
+              maxWidth: '85%',
+              wordWrap: 'break-word',
+            }}
+          >
+            {line}
+          </span>
+        ))}
+      </div>
     </div>
   );
-}; 
+};

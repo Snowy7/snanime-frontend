@@ -27,16 +27,31 @@ export const metadata = {
 export default async function Home() {
   const language = await getServerLanguage();
   
-  const tops: IAnimeSpotlight[] = (await snanimeService.getSpotlightAnime(language)) || [];
-  const latestEpisodes = 
-    (await snanimeService.getLatestAnime(undefined, language)) || {
-      items: [],
-      total: 0,
-      currentPage: 1,
-      totalPages: 1,
-      hasNextPage: false,
-      hasPreviousPage: false,
-    };
+  let tops: IAnimeSpotlight[] = [];
+  let latestEpisodes = {
+    items: [],
+    total: 0,
+    currentPage: 1,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  };
+
+  try {
+    const spotlightData = await snanimeService.getSpotlightAnime(language);
+    tops = spotlightData || [];
+  } catch (error) {
+    console.error("Error fetching spotlight anime:", error);
+  }
+
+  try {
+    const latestData = await snanimeService.getLatestAnime(undefined, language);
+    if (latestData) {
+      latestEpisodes = latestData;
+    }
+  } catch (error) {
+    console.error("Error fetching latest anime:", error);
+  }
 
   return <HomeClient tops={tops} latest={latestEpisodes} />;
 }

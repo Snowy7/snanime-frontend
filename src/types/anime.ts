@@ -10,17 +10,21 @@ export interface IAnimeSpotlight {
   duration: string;
   year: number;
   totalEpisodes: number;
+  genres?: string[];
+  averageScore?: number;
+  color?: string; // Anilist cover color for UI theming
 }
 
 export interface IAnimeLatest {
   id: string;
   title: string;
   posterUrl: string;
-  type: string;
-  status: string;
-  season: string;
-  year: string;
-  totalEpisodes: number;
+  type?: string;
+  status?: string;
+  season?: string;
+  year?: string | number;
+  totalEpisodes?: number;
+  latestEpisode?: number; // The most recently released episode number
 }
 
 export interface IAnime {
@@ -100,6 +104,11 @@ export interface IAnimeEpisodeDetails {
       quality?: string; // Quality of the stream
       server?: string; // Server name: "AnimeSLayer Original", "Server 4 (streamtape.to)", etc.
       headers?: Record<string, string>; // Headers for the request
+      provider?: string; // Provider name (e.g., "hianime", "animekai")
+      subtitles?: Array<{ // Subtitles specific to this source
+        url: string;
+        lang: string;
+      }>;
     }>;
   };
   allEpisodes: Array<{
@@ -107,6 +116,7 @@ export interface IAnimeEpisodeDetails {
     id: string;
     number: number;
     title: string;
+    thumbnail?: string;
   }>;
 }
 

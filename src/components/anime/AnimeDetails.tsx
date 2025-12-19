@@ -1,30 +1,84 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import { Play, Bookmark, Star, Check, ChevronDown } from "lucide-react";
+import { Play, Heart, Star, Check, ChevronDown, Plus, Eye, Pause, X, Clock, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
-import { userService } from "@/services/user";
+import { userService, WatchlistItem, WatchStatus } from "@/services/user";
 import { IAnime } from "@/types/anime";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+
+// Status options with labels and icons
+const STATUS_OPTIONS: { value: WatchStatus; label: string; icon: React.ReactNode }[] = [
+  { value: "WATCHING", label: "Watching", icon: <Eye className="w-4 h-4" /> },
+  { value: "COMPLETED", label: "Completed", icon: <Check className="w-4 h-4" /> },
+  { value: "ON_HOLD", label: "On Hold", icon: <Pause className="w-4 h-4" /> },
+  { value: "DROPPED", label: "Dropped", icon: <X className="w-4 h-4" /> },
+  { value: "PLAN_TO_WATCH", label: "Plan to Watch", icon: <Clock className="w-4 h-4" /> },
+];
 
 interface AnimeDetailsProps {
   anime: IAnime;
 }
 
 const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
-  const [isExpanded, setIsExpanded] = React.useState(false);
-  const [isSaving, setIsSaving] = React.useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isFavoriting, setIsFavoriting] = useState(false);
+  const [isInWatchlist, setIsInWatchlist] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [watchlistItem, setWatchlistItem] = useState<WatchlistItem | null>(null);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
-  const { user, refresh } = useAuth();
+  const { user, isAuthenticated, getAccessToken } = useAuth();
   const router = useRouter();
 
-  const isSaved = React.useMemo(() => {
-    if (!user?.preferences?.saves) return false;
-    return (user.preferences.saves as any[]).some((s) => s.animeId === anime.id);
-  }, [user, anime.id]);
+  const malId = anime.malId || parseInt(anime.id.replace(/^\d+:/, '')) || 0;
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setShowStatusDropdown(false);
+      }
+    };
+
+    if (showStatusDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showStatusDropdown]);
+
+  // Check if anime is in watchlist/favorites when component mounts
+  useEffect(() => {
+    const checkStatus = async () => {
+      if (!isAuthenticated || !malId) return;
+      
+      try {
+        const token = await getAccessToken();
+        if (!token) return;
+
+        // Check watchlist and favorites in parallel
+        const [watchlistResult, favoriteResult] = await Promise.all([
+          userService.getWatchlistItem(token, malId).catch(() => null),
+          userService.isFavorite(token, malId).catch(() => false),
+        ]);
+
+        setWatchlistItem(watchlistResult);
+        setIsInWatchlist(!!watchlistResult);
+        setIsFavorite(favoriteResult);
+      } catch (error) {
+        console.error("Error checking anime status:", error);
+      }
+    };
+
+    checkStatus();
+  }, [isAuthenticated, malId, getAccessToken]);
 
   const handleWatchNow = () => {
     const episodeSection = document.getElementById("episodes-section");
@@ -33,26 +87,135 @@ const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
     }
   };
 
-  const handleSave = async () => {
-    if (!user) {
+  const handleAddToWatchlist = useCallback(async (status: WatchStatus = "PLAN_TO_WATCH") => {
+    if (!isAuthenticated) {
       router.push("/login");
+      return;
+    }
+
+    if (!malId) {
+      console.error("No MAL ID available for this anime");
       return;
     }
 
     try {
       setIsSaving(true);
-      if (isSaved) {
-        await userService.removeSave(anime.id);
-      } else {
-        await userService.addSave(anime);
+      const token = await getAccessToken();
+      
+      if (!token) {
+        router.push("/login");
+        return;
       }
-      await refresh();
-    } catch (error) {
-      console.error("Failed to update save status:", error);
+
+      console.log("[Watchlist] Adding to watchlist with status:", status);
+      const item = await userService.addToWatchlist(token, malId, { status });
+      setIsInWatchlist(true);
+      setWatchlistItem(item);
+      setShowStatusDropdown(false);
+    } catch (error: any) {
+      console.error("[Watchlist] Failed to update watchlist:", error?.message || error);
     } finally {
       setIsSaving(false);
     }
+  }, [isAuthenticated, malId, getAccessToken, router]);
+
+  const handleStatusChange = useCallback(async (status: WatchStatus) => {
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+
+    if (!malId) {
+      console.error("No MAL ID available for this anime");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const token = await getAccessToken();
+      
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      if (isInWatchlist) {
+        console.log("[Watchlist] Updating status to:", status);
+        const item = await userService.updateWatchlistItem(token, malId, { status });
+        setWatchlistItem(item);
+      } else {
+        console.log("[Watchlist] Adding with status:", status);
+        const item = await userService.addToWatchlist(token, malId, { status });
+        setIsInWatchlist(true);
+        setWatchlistItem(item);
+      }
+      setShowStatusDropdown(false);
+    } catch (error: any) {
+      console.error("[Watchlist] Failed to update status:", error?.message || error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [isAuthenticated, malId, isInWatchlist, getAccessToken, router]);
+
+  const handleRemoveFromWatchlist = useCallback(async () => {
+    if (!isAuthenticated || !malId) return;
+
+    try {
+      setIsSaving(true);
+      const token = await getAccessToken();
+      
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      await userService.removeFromWatchlist(token, malId);
+      setIsInWatchlist(false);
+      setWatchlistItem(null);
+      setShowStatusDropdown(false);
+    } catch (error: any) {
+      console.error("[Watchlist] Failed to remove from watchlist:", error?.message || error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [isAuthenticated, malId, getAccessToken, router]);
+
+  const getCurrentStatusOption = () => {
+    return STATUS_OPTIONS.find(opt => opt.value === watchlistItem?.status) || STATUS_OPTIONS[4];
   };
+
+  const handleToggleFavorite = useCallback(async () => {
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+
+    if (!malId) {
+      console.error("No MAL ID available for this anime");
+      return;
+    }
+
+    try {
+      setIsFavoriting(true);
+      const token = await getAccessToken();
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      if (isFavorite) {
+        await userService.removeFromFavorites(token, malId);
+        setIsFavorite(false);
+      } else {
+        await userService.addToFavorites(token, malId);
+        setIsFavorite(true);
+      }
+    } catch (error) {
+      console.error("Failed to update favorites:", error);
+    } finally {
+      setIsFavoriting(false);
+    }
+  }, [isAuthenticated, malId, isFavorite, getAccessToken, router]);
 
   return (
     <div className="relative w-full min-h-[500px] sm:min-h-[550px] lg:min-h-[600px] xl:h-[80vh] bg-background rounded-b-[2rem] sm:rounded-b-[3rem] overflow-hidden shadow-2xl flex items-center z-10">
@@ -139,7 +302,9 @@ const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
                 
                 <span className={cn(
                   "px-2 py-0.5 rounded text-[10px] sm:text-xs uppercase tracking-wide",
-                  anime.status?.toLowerCase().includes("ongoing") ? "bg-emerald-500/20 text-emerald-400" : "bg-white/10 text-white/70"
+                  anime.status?.toLowerCase().includes("ongoing") || anime.status?.toLowerCase().includes("releasing") 
+                    ? "bg-emerald-500/20 text-emerald-400" 
+                    : "bg-white/10 text-white/70"
                 )}>
                   {anime.status}
                 </span>
@@ -163,27 +328,90 @@ const AnimeDetails: React.FC<AnimeDetailsProps> = ({ anime }) => {
                 <span>Start Watching</span>
               </Button>
               
+              {/* Add to Watchlist Button with Status Dropdown */}
+              <div className="relative" ref={statusDropdownRef}>
+                <Button 
+                  variant="default" 
+                  size="lg" 
+                  className={cn(
+                      "rounded-full h-10 sm:h-12 px-4 sm:px-6 gap-2 border-white/20 bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all",
+                      isInWatchlist && "bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600"
+                  )}
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      router.push("/login");
+                      return;
+                    }
+                    setShowStatusDropdown(!showStatusDropdown);
+                  }}
+                  disabled={isSaving}
+                >
+                  {isInWatchlist ? (
+                    <>
+                      {getCurrentStatusOption().icon}
+                      <span className="hidden sm:inline">{getCurrentStatusOption().label}</span>
+                      <ChevronDown className={cn("w-3 h-3 transition-transform", showStatusDropdown && "rotate-180")} />
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      <span className="hidden sm:inline">Add to List</span>
+                      <ChevronDown className={cn("w-3 h-3 transition-transform", showStatusDropdown && "rotate-180")} />
+                    </>
+                  )}
+                </Button>
+
+                {/* Status Dropdown Menu */}
+                {showStatusDropdown && (
+                  <div className="absolute top-full left-0 mt-2 py-2 bg-neutral-900 border border-white/10 rounded-xl shadow-xl z-50 min-w-[180px] overflow-hidden">
+                    {STATUS_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleStatusChange(option.value)}
+                        className={cn(
+                          "w-full px-4 py-2.5 text-sm text-left flex items-center gap-3 transition-colors",
+                          watchlistItem?.status === option.value
+                            ? "bg-primary/20 text-primary"
+                            : "text-white/80 hover:bg-white/10 hover:text-white"
+                        )}
+                      >
+                        {option.icon}
+                        <span>{option.label}</span>
+                        {watchlistItem?.status === option.value && (
+                          <Check className="w-3 h-3 ml-auto" />
+                        )}
+                      </button>
+                    ))}
+                    
+                    {/* Remove from list option */}
+                    {isInWatchlist && (
+                      <>
+                        <div className="border-t border-white/10 my-1" />
+                        <button
+                          onClick={handleRemoveFromWatchlist}
+                          className="w-full px-4 py-2.5 text-sm text-left flex items-center gap-3 text-red-400 hover:bg-red-500/10 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                          <span>Remove from List</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Favorite Button */}
               <Button 
                 variant="default" 
-                size="lg" 
+                size="icon" 
                 className={cn(
-                    "rounded-full h-10 sm:h-12 px-4 sm:px-6 gap-2 border-white/20 bg-white/10 hover:bg-white/20 backdrop-blur-sm",
-                    isSaved && "bg-primary text-primary-foreground hover:bg-primary/90"
+                    "rounded-full h-10 w-10 sm:h-12 sm:w-12 border-white/20 bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all",
+                    isFavorite && "bg-pink-600 text-white hover:bg-pink-700 border-pink-600"
                 )}
-                onClick={handleSave}
-                disabled={isSaving}
+                onClick={handleToggleFavorite}
+                disabled={isFavoriting}
               >
-                {isSaved ? (
-                  <>
-                      <Check className="w-4 h-4" />
-                      <span className="hidden sm:inline">Saved</span>
-                  </>
-                ) : (
-                  <>
-                      <Bookmark className="w-4 h-4" />
-                      <span className="hidden sm:inline">Add to list</span>
-                  </>
-                )}
+                <Heart className={cn("w-4 h-4 sm:w-5 sm:h-5", isFavorite && "fill-current")} />
               </Button>
             </div>
 

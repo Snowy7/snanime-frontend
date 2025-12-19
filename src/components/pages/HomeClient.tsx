@@ -3,6 +3,7 @@ import LatestEpisodes from "@/components/LatestEpisodes";
 import HeroHeader from "@/components/HeroHeader";
 import TrendingSection from "@/components/TrendingSection";
 import { useLanguage } from "@/context/LanguageContext";
+import { useRouter } from "next/navigation";
 import { IPaginatedResult, IAnimeLatest, IAnimeSpotlight } from "@/types/anime";
 
 interface HomeClientProps {
@@ -12,6 +13,7 @@ interface HomeClientProps {
 
 export default function HomeClient({ tops, latest }: HomeClientProps) {
   const { t } = useLanguage();
+  const router = useRouter();
 
   return (
     <main className="min-h-screen w-full text-white bg-background">
@@ -27,7 +29,8 @@ export default function HomeClient({ tops, latest }: HomeClientProps) {
         {/* Latest Episodes Section */}
         <LatestEpisodes
           title={t("recent_episodes") || "Latest Episodes"}
-          shows={latest?.items}
+          shows={latest?.items || []}
+          onViewAllClick={() => router.push("/latest")}
         />
       </div>
     </main>

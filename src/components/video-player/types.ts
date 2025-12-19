@@ -5,6 +5,8 @@ export interface VideoSource {
   quality?: string; // For MP4 sources: "1080p", "720p", "480p", etc.
   server?: string; // Server name: "AnimeSLayer Original", "Server 4 (streamtape.to)", etc.
   headers?: Record<string, string>; // Headers for the request
+  provider?: string; // Provider name for identification (animekai, hianime, etc.)
+  subtitles?: VideoSubtitle[]; // Subtitles specific to this source
 }
 
 export interface VideoSubtitle {
@@ -69,8 +71,9 @@ export interface Mp4QualityLevel {
 }
 
 export interface SourcePriority {
-  preferredSource: VideoSource | null; // HLS source if available
-  fallbackSources: VideoSource[]; // MP4 sources as fallback
+  preferredSource: VideoSource | null; // Primary HLS source if available
+  hlsAlternatives?: VideoSource[]; // Additional HLS sources from other providers for fallback
+  fallbackSources: VideoSource[]; // MP4 sources as final fallback
   currentSourceType: 'hls' | 'mp4';
   currentSourceIndex: number; // Index within the current type
 }

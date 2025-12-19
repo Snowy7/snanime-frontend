@@ -20,12 +20,14 @@ import {
 } from "./types";
 
 /**
- * Service class for interacting with the SnAnime API
+ * Service class for interacting with the SnAnime API v2
+ * No authentication required - public API
  */
 export class SnAnimeService {
   private static instance: SnAnimeService;
+  // Use API v2 - no auth required
   private baseUrl =
-    process.env.NEXT_PUBLIC_SNANIME_API_URL || "https://snanime-api.snowydev.xyz/api/v1";
+    process.env.NEXT_PUBLIC_SNANIME_API_URL || "http://localhost:3000";
 
   private constructor() {}
 
@@ -102,21 +104,28 @@ export class SnAnimeService {
   }
 
   /**
-   * Get anime information by ID
+   * Get anime information by MAL ID
+   * API v2 uses MAL ID directly without prefixes
    */
   public async getAnimeInfo(id: string, language: string = "en"): Promise<IAnime | null> {
     try {
-      const url = this.addLanguageToUrl(`${this.baseUrl}/anime/info/${id}`, language);
-      const response = await fetch(url);
-      const data = (await response.json()) as ISnAnimeInfo;
-
-      if (!data) {
-        console.error("Error fetching anime info:", data);
+      // Remove any provider prefix (e.g., "3:12345" -> "12345")
+      const malId = id.includes(':') ? id.split(':')[1] : id;
+      const url = this.addLanguageToUrl(`${this.baseUrl}/anime/${malId}`, language);
+      const response = await fetch(url, { 
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' }
+      });
+      
+      if (!response.ok) {
+        console.error("Error fetching anime info:", response.status);
         return null;
       }
 
-      // if includes error, return null
-      if (data.hasOwnProperty("error")) {
+      const data = (await response.json()) as ISnAnimeInfo;
+
+      if (!data || data.hasOwnProperty("error")) {
+        console.error("Error fetching anime info:", data);
         return null;
       }
 
@@ -135,13 +144,25 @@ export class SnAnimeService {
     language: string = "en"
   ): Promise<IPaginatedResult<IAnimeLatest> | null> {
     try {
-      const queryParams = new URLSearchParams(params as Record<string, string>);
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.set('page', params.page);
+      if (params?.limit) queryParams.set('limit', params.limit);
       queryParams.set('language', language);
-      const response = await fetch(`${this.baseUrl}/anime/latest?${queryParams}`);
+      
+      const response = await fetch(`${this.baseUrl}/anime/latest?${queryParams}`, {
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' }
+      });
+      
+      if (!response.ok) {
+        console.error("Error fetching latest anime:", response.status);
+        return null;
+      }
+
       const data = (await response.json()) as ISnAnimePaginationResult<ISnAnimeLatest>;
 
       if (!data.data || !data.pagination) {
-        console.error("Error fetching latest anime:", data.data);
+        console.error("Error fetching latest anime:", data);
         return null;
       }
 
@@ -160,15 +181,24 @@ export class SnAnimeService {
   }
 
   /**
-   * Get spotlight anime
+   * Get spotlight anime (trending from Anilist)
    */
   public async getSpotlightAnime(language: string = "en"): Promise<IAnimeSpotlight[] | null> {
     try {
       const url = this.addLanguageToUrl(`${this.baseUrl}/anime/spotlight`, language);
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!response.ok) {
+        console.error("Error fetching spotlight anime:", response.status);
+        return null;
+      }
+
       const data = (await response.json()) as ISnAnimeSpotlight[];
 
-      if (!data) {
+      if (!data || !Array.isArray(data)) {
         console.error("Error fetching spotlight anime:", data);
         return null;
       }
@@ -181,9 +211,126 @@ export class SnAnimeService {
   }
 
   /**
+   * Get trending anime (sorted by trending score)
+   */
+  public async getTrendingAnime(page: number = 1, limit: number = 20): Promise<IAnimeSpotlight[] | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/anime/trending?page=${page}&limit=${limit}`, {
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!response.ok) {
+        console.error("Error fetching trending anime:", response.status);
+        return null;
+      }
+
+      const data = (await response.json()) as ISnAnimeSpotlight[];
+
+      if (!data || !Array.isArray(data)) {
+        console.error("Error fetching trending anime:", data);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching trending anime:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Get popular anime (sorted by popularity)
+   */
+  public async getPopularAnime(page: number = 1, limit: number = 20): Promise<IAnimeSpotlight[] | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/anime/popular?page=${page}&limit=${limit}`, {
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!response.ok) {
+        console.error("Error fetching popular anime:", response.status);
+        return null;
+      }
+
+      const data = (await response.json()) as ISnAnimeSpotlight[];
+
+      if (!data || !Array.isArray(data)) {
+        console.error("Error fetching popular anime:", data);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching popular anime:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Get top rated anime (sorted by average score)
+   */
+  public async getTopRatedAnime(page: number = 1, limit: number = 20): Promise<IAnimeSpotlight[] | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/anime/top-rated?page=${page}&limit=${limit}`, {
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!response.ok) {
+        console.error("Error fetching top rated anime:", response.status);
+        return null;
+      }
+
+      const data = (await response.json()) as ISnAnimeSpotlight[];
+
+      if (!data || !Array.isArray(data)) {
+        console.error("Error fetching top rated anime:", data);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching top rated anime:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Get currently airing anime
+   */
+  public async getAiringAnime(page: number = 1, limit: number = 20): Promise<IAnimeSpotlight[] | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/anime/airing?page=${page}&limit=${limit}`, {
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!response.ok) {
+        console.error("Error fetching airing anime:", response.status);
+        return null;
+      }
+
+      const data = (await response.json()) as ISnAnimeSpotlight[];
+
+      if (!data || !Array.isArray(data)) {
+        console.error("Error fetching airing anime:", data);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching airing anime:", error);
+      return null;
+    }
+  }
+
+  /**
    * Get optimized image through proxy
    */
   public getProxyImageUrl(imageUrl: string): string {
+    if (!imageUrl) return '';
     const encodedUrl = encodeURIComponent(imageUrl);
     return `${this.baseUrl}/proxy/image?url=${encodedUrl}`;
   }
@@ -192,17 +339,47 @@ export class SnAnimeService {
    * Get optimized video through proxy
    */
   public getProxyVideoUrl(videoUrl: string): string {
+    if (!videoUrl) return '';
     const encodedUrl = encodeURIComponent(videoUrl);
     return `${this.baseUrl}/proxy/video?url=${encodedUrl}`;
   }
 
   /**
-   * Get episode details by anime ID and episode number
+   * Get M3U8/HLS playlist through proxy (with URL rewriting)
+   */
+  public getProxyM3U8Url(m3u8Url: string): string {
+    if (!m3u8Url) return '';
+    const encodedUrl = encodeURIComponent(m3u8Url);
+    return `${this.baseUrl}/proxy/m3u8?url=${encodedUrl}`;
+  }
+
+  /**
+   * Get subtitle through proxy
+   */
+  public getProxySubtitleUrl(subtitleUrl: string): string {
+    if (!subtitleUrl) return '';
+    const encodedUrl = encodeURIComponent(subtitleUrl);
+    return `${this.baseUrl}/proxy/subtitle?url=${encodedUrl}`;
+  }
+
+  /**
+   * Get episode details by MAL ID and episode number
    */
   public async getEpisodeDetails(animeId: string, episodeNumber: string, language: string = "en"): Promise<ISnAnimeEpisodeDetails | null> {
     try {
-      const url = this.addLanguageToUrl(`${this.baseUrl}/anime/episode/${animeId}/${episodeNumber}`, language);
-      const response = await fetch(url);
+      // Remove any provider prefix
+      const malId = animeId.includes(':') ? animeId.split(':')[1] : animeId;
+      const url = this.addLanguageToUrl(`${this.baseUrl}/anime/${malId}/episode/${episodeNumber}`, language);
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!response.ok) {
+        console.error("Error fetching episode details:", response.status);
+        return null;
+      }
+
       const data = (await response.json()) as ISnAnimeEpisodeDetails;
 
       if (data.hasOwnProperty("error")) {

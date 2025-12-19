@@ -13,9 +13,11 @@ export interface AnimeCardProps {
   posterUrl: string | null;
   type?: string;
   rating?: number | null;
+  score?: number | null;
   status?: string;
   year?: number | string;
   episodes?: number | string;
+  totalEpisodes?: number | string;
   seasons?: number | string;
   genres?: string[];
   rank?: number;
@@ -28,9 +30,11 @@ const AnimeCard: React.FC<AnimeCardProps> = ({
   posterUrl,
   type,
   rating,
+  score,
   status,
   year,
   episodes,
+  totalEpisodes,
   seasons,
   genres,
   rank,
@@ -43,6 +47,9 @@ const AnimeCard: React.FC<AnimeCardProps> = ({
 
   // Status badge styling
   const isOngoing = status?.toLowerCase() === "ongoing" || status?.toLowerCase() === "releasing";
+  
+  // Use score if rating not provided
+  const displayRating = rating || (score ? score / 10 : null);
 
   return (
     <Link
@@ -81,27 +88,40 @@ const AnimeCard: React.FC<AnimeCardProps> = ({
         </div>
       </div>
 
+      {/* Rank Badge - Positioned at card level */}
+      {rank && rank <= 10 && (
+        <div className="absolute top-1.5 left-1.5 w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg z-40">
+          <span className="text-xs font-bold text-black">#{rank}</span>
+        </div>
+      )}
+
       {/* Top Badges */}
       <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-start z-30">
-        {/* Status Badge (ONGOING) */}
+        {/* Status Badge (ONGOING) - shift right if rank badge present */}
         {isOngoing && (
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide text-white bg-emerald-600 shadow-sm">
+          <span className={cn(
+            "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide text-white bg-emerald-600 shadow-sm",
+            rank && rank <= 10 && "ml-8"
+          )}>
             Ongoing
           </span>
         )}
         
-        {/* Genre/Type Badge */}
+        {/* Genre/Type Badge - shift right if rank badge present */}
         {primaryGenre && !isOngoing && (
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide text-primary-foreground bg-primary/90 backdrop-blur-sm shadow-sm">
+          <span className={cn(
+            "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide text-primary-foreground bg-primary/90 backdrop-blur-sm shadow-sm",
+            rank && rank <= 10 && "ml-8"
+          )}>
             {primaryGenre}
           </span>
         )}
 
         {/* Rating Badge */}
-        {rating && (
+        {displayRating && (
           <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-primary/90 backdrop-blur-sm shadow-sm ml-auto">
             <Star className="w-3 h-3 text-primary-foreground fill-primary-foreground" />
-            <span className="text-xs font-bold text-primary-foreground">{typeof rating === 'number' ? rating.toFixed(1) : rating}</span>
+            <span className="text-xs font-bold text-primary-foreground">{typeof displayRating === 'number' ? displayRating.toFixed(1) : displayRating}</span>
           </div>
         )}
       </div>
@@ -114,10 +134,14 @@ const AnimeCard: React.FC<AnimeCardProps> = ({
         
         {/* Metadata */}
         <div className="flex items-center gap-1.5 text-[11px] text-white/60 font-medium">
-          {seasons && <span>{seasons} {Number(seasons) === 1 ? 'season' : 'seasons'}</span>}
-          {seasons && episodes && <span>•</span>}
-          {episodes && <span>{episodes} {Number(episodes) === 1 ? 'episode' : 'episodes'}</span>}
-          {!seasons && !episodes && year && <span>{year}</span>}
+          {type && <span className="uppercase">{type}</span>}
+          {type && (totalEpisodes || episodes) && <span>•</span>}
+          {(totalEpisodes || episodes) && (
+            <span>
+              {totalEpisodes || episodes} {Number(totalEpisodes || episodes) === 1 ? 'ep' : 'eps'}
+            </span>
+          )}
+          {!type && !totalEpisodes && !episodes && year && <span>{year}</span>}
         </div>
       </div>
     </Link>

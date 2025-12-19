@@ -138,24 +138,30 @@ const HeroHeader = ({ tops }: { tops: IAnimeSpotlight[] }) => {
 
                   {/* Metadata Row */}
                   <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-2 text-sm text-white/50 pt-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-white/40">Rating:</span>
-                      <span className="text-white font-semibold">8.7</span>
-                    </div>
+                    {(currentAnime as any).averageScore && (
+                      <div className="flex items-center gap-1.5">
+                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                        <span className="text-white font-semibold">{((currentAnime as any).averageScore / 10).toFixed(1)}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1.5">
                       <span className="text-white/40">Year:</span>
-                      <span className="text-white font-semibold">{currentAnime.year || "2024"}</span>
+                      <span className="text-white font-semibold">{currentAnime.year || new Date().getFullYear()}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-white/40">Episodes:</span>
                       <span className="text-white font-semibold">
-                        {currentAnime.totalEpisodes ? `2/${currentAnime.totalEpisodes}` : "2/12"}
+                        {currentAnime.totalEpisodes || "?"}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-white/40">Genre:</span>
-                      <span className="text-white font-semibold">Action, Fantasy...</span>
-                    </div>
+                    {(currentAnime as any).genres && (currentAnime as any).genres.length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-white/40">Genre:</span>
+                        <span className="text-white font-semibold">
+                          {(currentAnime as any).genres.slice(0, 3).join(", ")}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               </AnimatePresence>

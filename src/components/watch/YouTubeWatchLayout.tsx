@@ -7,6 +7,9 @@ import { VideoPlayer } from '../video-player/VideoPlayer';
 import { WatchEpisodeCard } from '../cards/WatchEpisodeCard';
 import { IAnimeEpisodeDetails } from '@/types/anime';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
+import { userService, WatchHistoryItem } from '@/services/user';
 import { Button } from '../ui/button';
 
 interface YouTubeWatchLayoutProps {
@@ -22,9 +25,62 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSidebar, setShowSidebar] = useState(false);
+  const [initialSeekTime, setInitialSeekTime] = useState<number | null>(null);
+  const [allWatchHistory, setAllWatchHistory] = useState<Map<number, WatchHistoryItem>>(new Map());
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const { language, t } = useLanguage();
+  const { isAuthenticated, getAccessToken } = useAuth();
+
+  // Extract malId from animeId (might be prefixed like "3:12345")
+  const malId = parseInt(episodeDetails.animeId.includes(':') 
+    ? episodeDetails.animeId.split(':')[1] 
+    : episodeDetails.animeId);
+    
+  // Fetch watch history for all episodes of this anime
+  useEffect(() => {
+    const fetchAllWatchHistory = async () => {
+      if (!isAuthenticated || !malId) return;
+
+      try {
+        const token = await getAccessToken();
+        if (!token) return;
+
+        const history = await userService.getWatchHistory(token, { limit: 500 });
+        const animeHistory = history.filter(h => h.malId === malId);
+        
+        const historyMap = new Map<number, WatchHistoryItem>();
+        animeHistory.forEach(h => {
+          historyMap.set(h.episodeNumber, h);
+        });
+        
+        setAllWatchHistory(historyMap);
+      } catch (error) {
+        console.error("[YouTubeWatchLayout] Failed to fetch watch history:", error);
+      }
+    };
+
+    fetchAllWatchHistory();
+  }, [isAuthenticated, malId, getAccessToken]);
+
+  // Watch history tracking
+  const { 
+    savedProgress, 
+    isLoading: isLoadingProgress,
+    updateProgress,
+    startTracking,
+    stopTracking,
+    markCompleted,
+  } = useWatchHistory({
+    malId,
+    episodeNumber: episodeDetails.number,
+    onProgressLoaded: (progress) => {
+      // Set initial seek time if we have saved progress
+      if (progress > 10) {
+        setInitialSeekTime(progress);
+      }
+    },
+  });
 
   const currentEpisodeIndex = episodeDetails.allEpisodes.findIndex(
     (ep) => ep.id === episodeDetails.id
@@ -35,12 +91,61 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
   const previousEpisode = hasPrevious ? episodeDetails.allEpisodes[currentEpisodeIndex - 1] : null;
   const nextEpisode = hasNext ? episodeDetails.allEpisodes[currentEpisodeIndex + 1] : null;
 
-  // Setup video ref callback
+  // Setup video ref callback with resume functionality
   const handleVideoRef = useCallback((videoElement: HTMLVideoElement | null) => {
     if (videoElement) {
       videoRef.current = videoElement;
+      
+      // Seek to saved position when video is ready
+      const handleLoadedMetadata = () => {
+        if (initialSeekTime && initialSeekTime > 10) {
+          // Don't seek if we're near the end (within 2 minutes of duration)
+          if (videoElement.duration && initialSeekTime < videoElement.duration - 120) {
+            console.log(`[WatchHistory] Resuming from ${initialSeekTime}s`);
+            videoElement.currentTime = initialSeekTime;
+          }
+        }
+      };
+      
+      // Track play/pause for watch history
+      const handlePlay = () => {
+        startTracking();
+      };
+      
+      const handlePause = () => {
+        stopTracking();
+      };
+      
+      const handleTimeUpdate = () => {
+        updateProgress(videoElement.currentTime, videoElement.duration || 0);
+      };
+      
+      const handleEnded = () => {
+        markCompleted();
+        stopTracking();
+      };
+      
+      videoElement.addEventListener('loadedmetadata', handleLoadedMetadata);
+      videoElement.addEventListener('play', handlePlay);
+      videoElement.addEventListener('pause', handlePause);
+      videoElement.addEventListener('timeupdate', handleTimeUpdate);
+      videoElement.addEventListener('ended', handleEnded);
+      
+      // Cleanup function stored on the element
+      (videoElement as any).__watchHistoryCleanup = () => {
+        videoElement.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        videoElement.removeEventListener('play', handlePlay);
+        videoElement.removeEventListener('pause', handlePause);
+        videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+        videoElement.removeEventListener('ended', handleEnded);
+      };
+    } else if (videoRef.current) {
+      // Cleanup previous element
+      const cleanup = (videoRef.current as any).__watchHistoryCleanup;
+      if (cleanup) cleanup();
+      videoRef.current = null;
     }
-  }, []);
+  }, [initialSeekTime, startTracking, stopTracking, updateProgress, markCompleted]);
 
   // Filter episodes based on search query
   const filteredEpisodes = useMemo(() => {
@@ -240,18 +345,26 @@ export const YouTubeWatchLayout: React.FC<YouTubeWatchLayoutProps> = ({
             {/* Episodes Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {filteredEpisodes.length > 0 ? (
-                filteredEpisodes.map((episode, index) => (
-                  <WatchEpisodeCard
-                    key={episode.id}
-                    episode={episode}
-                    animeTitle={episodeDetails.animeTitle}
-                    animeId={episodeDetails.animeId}
-                    posterUrl={posterUrl}
-                    isActive={episode.number === episodeDetails.number}
-                    onClick={() => handleEpisodeClick(episode.number)}
-                    isLazyLoad={index > 18}
-                  />
-                ))
+                filteredEpisodes.map((episode, index) => {
+                  const watchProgress = allWatchHistory.get(episode.number);
+                  return (
+                    <WatchEpisodeCard
+                      key={episode.id}
+                      episode={episode}
+                      animeTitle={episodeDetails.animeTitle}
+                      animeId={episodeDetails.animeId}
+                      posterUrl={posterUrl}
+                      isActive={episode.number === episodeDetails.number}
+                      onClick={() => handleEpisodeClick(episode.number)}
+                      isLazyLoad={index > 18}
+                      watchProgress={watchProgress ? {
+                        progress: watchProgress.progress,
+                        duration: watchProgress.duration,
+                        completed: watchProgress.completed,
+                      } : null}
+                    />
+                  );
+                })
               ) : (
                 <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-2xl">
                   <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">

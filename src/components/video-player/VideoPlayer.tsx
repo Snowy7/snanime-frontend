@@ -45,12 +45,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [failedSources, setFailedSources] = useState<Set<string>>(new Set());
 
   // Process and organize sources with priority system
+  // Now supports multiple HLS sources from different providers
   const sourcePriority = useMemo((): SourcePriority => {
     const hlsSources = streams.sources.filter(source => source.isM3U8);
     const mp4Sources = streams.sources.filter(source => !source.isM3U8);
 
+    // All HLS sources are potential primary sources (for fallback)
     return {
-      preferredSource: hlsSources[0] || null, // Use first HLS source as preferred
+      preferredSource: hlsSources[0] || null,
+      hlsAlternatives: hlsSources.slice(1), // Additional HLS sources from other providers
       fallbackSources: mp4Sources,
       currentSourceType: hlsSources.length > 0 ? 'hls' : 'mp4',
       currentSourceIndex: 0,
@@ -95,11 +98,94 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return streams.sources.some(source => source.isM3U8);
   }, [streams.sources]);
 
-  // Validate and set default subtitle language
-  useEffect(() => {
-    if (!streams.subtitles || streams.subtitles.length === 0) return;
+  const [playerState, setPlayerState] = useState<PlayerState>({
+    isPlaying: false,
+    currentTime: 0,
+    duration: 0,
+    buffered: 0,
+    isLoading: true,
+    error: null,
+    isFullscreen: false,
+    showControls: true,
+  });
 
-    const availableLanguages = streams.subtitles.map(sub => sub.lang);
+  const [playerError, setPlayerError] = useState<PlayerError | null>(null);
+  const [isPlayerFocused, setIsPlayerFocused] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+
+  // Memoize current source with priority and fallback logic
+  // Supports multiple HLS sources before falling back to MP4
+  const currentSource = useMemo(() => {
+    let source: VideoSource | null = null;
+
+    if (currentSourceType === 'hls' && !hlsFailed) {
+      // First try the preferred HLS source
+      if (sourcePriority.preferredSource && !failedSources.has(sourcePriority.preferredSource.url)) {
+        source = sourcePriority.preferredSource;
+      } else {
+        // Try alternative HLS sources from other providers
+        const alternatives = sourcePriority.hlsAlternatives || [];
+        for (const altSource of alternatives) {
+          if (!failedSources.has(altSource.url)) {
+            source = altSource;
+            console.log(`[VideoPlayer] Trying alternative HLS source from ${(altSource as any).provider || 'unknown'}`);
+            break;
+          }
+        }
+      }
+      
+      // If all HLS sources failed, switch to MP4
+      if (!source && sourcePriority.fallbackSources.length > 0) {
+        console.log('[VideoPlayer] All HLS sources failed, switching to MP4');
+        setCurrentSourceType('mp4');
+        setHlsFailed(true);
+      }
+    }
+    
+    if (currentSourceType === 'mp4' || (!source && hlsFailed)) {
+      // Use MP4 fallback - either user selected MP4 or HLS failed
+      const mp4Sources = sourcePriority.fallbackSources;
+      for (let i = 0; i < mp4Sources.length; i++) {
+        const mp4Source = mp4Sources[settings.selectedMp4Quality] || mp4Sources[i];
+        if (!failedSources.has(mp4Source.url)) {
+          source = mp4Source;
+          break;
+        }
+      }
+    }
+
+    if (!source) {
+      // All sources exhausted
+      return null;
+    }
+
+    // Check if source has changed
+    if (source.url !== previousSourceRef.current) {
+      previousSourceRef.current = source.url;
+      const provider = (source as any).provider || 'unknown';
+      console.log(`[VideoPlayer] Using source from ${provider}: ${source.url.substring(0, 50)}...`);
+      return source;
+    }
+
+    return source;
+  }, [streams.sources, settings.selectedMp4Quality, currentSourceType, hlsFailed, failedSources, sourcePriority]);
+
+  // Get subtitles for the current source (source-specific first, then global fallback)
+  const currentSubtitles = useMemo(() => {
+    // Use source-specific subtitles if available
+    if (currentSource?.subtitles && currentSource.subtitles.length > 0) {
+      console.log(`[VideoPlayer] Using ${currentSource.subtitles.length} subtitles from current source (${currentSource.provider})`);
+      return currentSource.subtitles;
+    }
+    // Fall back to global subtitles
+    return streams.subtitles || [];
+  }, [currentSource, streams.subtitles]);
+
+  // Validate and set default subtitle language based on current source
+  useEffect(() => {
+    if (!currentSubtitles || currentSubtitles.length === 0) return;
+
+    const availableLanguages = currentSubtitles.map(sub => sub.lang);
     const currentLang = settings.selectedSubtitleLang;
 
     // If current language is not available, set to default
@@ -120,71 +206,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       updateSettings({ selectedSubtitleLang: defaultLang });
     }
-  }, [streams.subtitles, settings.selectedSubtitleLang, updateSettings]);
-
-  const [playerState, setPlayerState] = useState<PlayerState>({
-    isPlaying: false,
-    currentTime: 0,
-    duration: 0,
-    buffered: 0,
-    isLoading: true,
-    error: null,
-    isFullscreen: false,
-    showControls: true,
-  });
-
-  const [playerError, setPlayerError] = useState<PlayerError | null>(null);
-  const [isPlayerFocused, setIsPlayerFocused] = useState(false);
-  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-
-  // Memoize current source with priority and fallback logic
-  const currentSource = useMemo(() => {
-    let source: VideoSource | null = null;
-
-    if (currentSourceType === 'hls' && sourcePriority.preferredSource && !hlsFailed) {
-      // Try HLS first if available and not failed
-      source = sourcePriority.preferredSource;
-    } else if (currentSourceType === 'mp4' || hlsFailed) {
-      // Use MP4 fallback - either user selected MP4 or HLS failed
-      const mp4Sources = sourcePriority.fallbackSources;
-      if (mp4Sources.length > 0) {
-        const selectedIndex = Math.min(settings.selectedMp4Quality, mp4Sources.length - 1);
-        source = mp4Sources[selectedIndex] || mp4Sources[0] || null;
-      }
-    }
-
-    // Skip failed sources
-    if (source && failedSources.has(source.url)) {
-      // Try next available source
-      if (currentSourceType === 'hls' && sourcePriority.fallbackSources.length > 0) {
-        // HLS failed, switch to MP4
-        setCurrentSourceType('mp4');
-        setHlsFailed(true);
-        const mp4Sources = sourcePriority.fallbackSources;
-        source = mp4Sources[0] || null;
-      } else if (currentSourceType === 'mp4') {
-        // Current MP4 failed, try next MP4 source
-        const mp4Sources = sourcePriority.fallbackSources;
-        const currentIndex = mp4Sources.findIndex(s => s.url === source?.url);
-        const nextIndex = currentIndex + 1;
-        if (nextIndex < mp4Sources.length) {
-          source = mp4Sources[nextIndex] || null;
-        } else {
-          source = null; // All sources failed
-        }
-      }
-    }
-
-    if (!source) return null;
-
-    // Check if source has changed
-    if (source.url !== previousSourceRef.current) {
-      previousSourceRef.current = source.url;
-      return source;
-    }
-
-    return source;
-  }, [streams.sources, settings.selectedMp4Quality, currentSourceType, hlsFailed, failedSources, sourcePriority]);
+  }, [currentSubtitles, settings.selectedSubtitleLang, updateSettings]);
 
   const handleHlsError = useCallback((error: PlayerError) => {
     console.error('HLS Error in component:', error);
@@ -193,26 +215,34 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     // If it's a fatal error, mark current source as failed and try fallback
     if (error.fatal) {
       if (currentSource) {
-        console.log('Marking source as failed:', currentSource.url);
+        const provider = (currentSource as any).provider || 'unknown';
+        console.log(`[VideoPlayer] Marking source as failed (${provider}):`, currentSource.url.substring(0, 50));
         setFailedSources(prev => new Set([...prev, currentSource.url]));
+        setPlayerError(null); // Clear error to try next source
 
-        // If HLS failed and we have MP4 fallbacks, switch to MP4
-        if (currentSourceType === 'hls' && sourcePriority.fallbackSources.length > 0) {
-          console.log('HLS failed, switching to MP4 fallback');
+        // Check if there are more HLS alternatives to try
+        const alternatives = sourcePriority.hlsAlternatives || [];
+        const hasMoreHlsSources = alternatives.some(s => !failedSources.has(s.url) && s.url !== currentSource.url);
+        
+        if (hasMoreHlsSources) {
+          console.log('[VideoPlayer] Trying next HLS alternative...');
+          // The useMemo will pick the next available HLS source
+        } else if (sourcePriority.fallbackSources.length > 0) {
+          // No more HLS sources, try MP4
+          console.log('[VideoPlayer] No more HLS sources, switching to MP4 fallback');
           setCurrentSourceType('mp4');
           setHlsFailed(true);
-          setPlayerError(null); // Clear error to try MP4
         } else {
           // No more fallbacks available
           setPlayerState(prev => ({
             ...prev,
             isLoading: false,
-            error: error.message
+            error: 'All video sources failed. Please try again later.'
           }));
         }
       }
     }
-  }, [currentSource, currentSourceType, sourcePriority.fallbackSources.length]);
+  }, [currentSource, currentSourceType, sourcePriority.fallbackSources.length, sourcePriority.hlsAlternatives, failedSources]);
 
   // Validate HLS quality setting
   useEffect(() => {
@@ -629,7 +659,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       {/* Subtitles */}
       <SubtitleDisplay
-        subtitles={streams.subtitles}
+        subtitles={currentSubtitles}
         currentTime={playerState.currentTime}
         settings={settings}
         isVisible={!showSettingsMenu}
@@ -642,7 +672,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         onClose={() => setShowSettingsMenu(false)}
         hlsQualityLevels={hlsQualityLevels}
         mp4QualityLevels={mp4QualityLevels}
-        availableSubtitles={streams.subtitles}
+        availableSubtitles={currentSubtitles}
         isVisible={showSettingsMenu}
         isMP4Stream={currentSourceType === 'mp4'}
         hasHLSSource={hasHLSSources}

@@ -1,101 +1,127 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { authService, type AuthUser } from "@/services/auth";
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
+import { appwriteAuth, Models } from "@/lib/appwrite";
+
+// User type from Appwrite
+export interface AuthUser {
+  id: string;
+  email: string;
+  displayName: string | null;
+  profileImageUrl: string | null;
+  emailVerified: boolean;
+}
 
 type AuthState = {
   user: AuthUser | null;
   isLoading: boolean;
-  error: string | null;
-  refresh: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
-  register: (params: { username: string; email: string; password: string; firstName?: string; lastName?: string }) => Promise<void>;
-  logout: () => Promise<void>;
+  isAuthenticated: boolean;
+  signIn: () => void;
+  signUp: () => void;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, name?: string) => Promise<void>;
+  signInWithGoogle: () => void;
+  signOut: () => Promise<void>;
+  // Access token for API calls
+  getAccessToken: () => Promise<string | null>;
+  // Refresh user data
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
+function mapAppwriteUser(appwriteUser: Models.User<Models.Preferences>): AuthUser {
+  return {
+    id: appwriteUser.$id,
+    email: appwriteUser.email,
+    displayName: appwriteUser.name || null,
+    profileImageUrl: appwriteUser.prefs?.avatar || null,
+    emailVerified: appwriteUser.emailVerification,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Only attempt if we have some auth (token or cookie)
-      const token = authService.getStoredAccessToken();
-      if (!token) {
-        setUser(null);
-        return;
-      }
-      const me = await authService.me();
-      setUser(me);
-    } catch (e) {
-      authService.storeAccessToken(null);
-      setUser(null);
-      setError(e instanceof Error ? e.message : "Failed to load session");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
+  // Check for existing session on mount
   useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  const login = useCallback(async (email: string, password: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await authService.login(email, password);
-      setUser(result.user);
-    } catch (e) {
-      setUser(null);
-      setError(e instanceof Error ? e.message : "Login failed");
-      throw e;
-    } finally {
-      setIsLoading(false);
-    }
+    checkSession();
   }, []);
 
-  const register = useCallback(
-    async (params: { username: string; email: string; password: string; firstName?: string; lastName?: string }) => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const result = await authService.register(params);
-        setUser(result.user);
-      } catch (e) {
+  const checkSession = async () => {
+    try {
+      const appwriteUser = await appwriteAuth.getUser();
+      if (appwriteUser) {
+        setUser(mapAppwriteUser(appwriteUser));
+      } else {
         setUser(null);
-        setError(e instanceof Error ? e.message : "Signup failed");
-        throw e;
-      } finally {
-        setIsLoading(false);
       }
-    },
-    []
-  );
-
-  const logout = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await authService.logout();
+    } catch {
       setUser(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Logout failed");
-      throw e;
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const refreshUser = useCallback(async () => {
+    try {
+      console.log('[AuthContext] Refreshing user...');
+      const appwriteUser = await appwriteAuth.getUser();
+      if (appwriteUser) {
+        setUser(mapAppwriteUser(appwriteUser));
+      }
+    } catch {
+      setUser(null);
+    }
   }, []);
 
-  const value = useMemo<AuthState>(
-    () => ({ user, isLoading, error, refresh, login, register, logout }),
-    [user, isLoading, error, refresh, login, register, logout]
-  );
+  const signIn = useCallback(() => {
+    window.location.href = "/login";
+  }, []);
+
+  const signUp = useCallback(() => {
+    window.location.href = "/signup";
+  }, []);
+
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    await appwriteAuth.signInWithEmail(email, password);
+    await refreshUser();
+  }, [refreshUser]);
+
+  const signUpWithEmail = useCallback(async (email: string, password: string, name?: string) => {
+    await appwriteAuth.createAccount(email, password, name);
+    await appwriteAuth.signInWithEmail(email, password);
+    await refreshUser();
+  }, [refreshUser]);
+
+  const signInWithGoogle = useCallback(() => {
+    appwriteAuth.signInWithGoogle();
+  }, []);
+
+  const signOut = useCallback(async () => {
+    await appwriteAuth.signOut();
+    setUser(null);
+    window.location.href = "/";
+  }, []);
+
+  const getAccessToken = useCallback(async () => {
+    return appwriteAuth.getJWT();
+  }, []);
+
+  const value = useMemo<AuthState>(() => ({
+    user,
+    isLoading,
+    isAuthenticated: !!user,
+    signIn,
+    signUp,
+    signInWithEmail,
+    signUpWithEmail,
+    signInWithGoogle,
+    signOut,
+    getAccessToken,
+    refreshUser,
+  }), [user, isLoading, signIn, signUp, signInWithEmail, signUpWithEmail, signInWithGoogle, signOut, getAccessToken, refreshUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
@@ -105,5 +131,3 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
   return ctx;
 }
-
-

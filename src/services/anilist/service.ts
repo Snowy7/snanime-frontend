@@ -86,7 +86,7 @@ export class AniListService {
   private mapToSearchResult(anilistAnime: IAnilistAnimeData): IAnimeSearchResult {
     const id = anilistAnime.idMal ? anilistAnime.idMal.toString() : anilistAnime.id.toString();
     return {
-      id: `3:${id}`,
+      id: `${id}`,
       title: anilistAnime.title.english || anilistAnime.title.romaji,
       coverImage: anilistAnime.coverImage.large,
       description: anilistAnime.description || undefined,
@@ -351,13 +351,17 @@ export class AniListService {
 
     // Base variables
     const variables: IAnilistSearchVariables = {
-      search: params.query,
       page: params.page || 1,
       perPage: params.perPage || 20,
       type: "ANIME",
-      sort: ["SEARCH_MATCH"],
       isAdult: false,
     };
+
+    // Only add search if there's a query
+    const hasQuery = params.query?.trim();
+    if (hasQuery) {
+      variables.search = params.query;
+    }
 
     // Only add non-empty parameters
     if (params.season) variables.season = params.season;
@@ -365,10 +369,14 @@ export class AniListService {
     if (params.genres && params.genres.length > 0) variables.genres = params.genres;
     if (params.format && params.format.length > 0) variables.format = params.format;
     if (params.status) variables.status = params.status;
+    
+    // Set sort based on whether we have a search query
     if (params.sort && params.sort.length > 0) {
       variables.sort = params.sort;
-    } else {
+    } else if (hasQuery) {
       variables.sort = ["SEARCH_MATCH", "POPULARITY_DESC"];
+    } else {
+      variables.sort = ["POPULARITY_DESC"];
     }
 
     const query = `
