@@ -1,6 +1,6 @@
 import HomeClient from "@/components/pages/HomeClient";
 import { snanimeService } from "@/services/global";
-import { IAnimeSpotlight, IAnimeLatest } from "@/types/anime";
+import { IAnimeSpotlight, IAnimeLatest, IPaginatedResult } from "@/types/anime";
 import { getServerLanguage } from "@/lib/server-utils";
 
 export const metadata = {
@@ -28,7 +28,7 @@ export default async function Home() {
   const language = await getServerLanguage();
   
   let tops: IAnimeSpotlight[] = [];
-  let latestEpisodes = {
+  let latestEpisodes: IPaginatedResult<IAnimeLatest> = {
     items: [],
     total: 0,
     currentPage: 1,
